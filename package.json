@@ -7,12 +7,17 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:api": "node --env-file-if-exists=.env.local scripts/dev-api.mjs",
+    "db:seed": "node --env-file-if-exists=.env.local scripts/seed.mjs"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dompurify": "^3.4.8",
     "html2canvas": "^1.4.1",
+    "jose": "^6.2.15",
     "jspdf": "^4.2.1",
+    "pg": "^8.23.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
