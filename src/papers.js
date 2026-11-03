@@ -1,36 +1,6 @@
-import { paper1 } from "./assets/Papers/ND/Paper1";
-import { paper2 } from "./assets/Papers/ND/Paper2";
-import { paper3 } from "./assets/Papers/ND/Paper3";
-import { paper4 } from "./assets/Papers/ND/Paper4";
-import { paper5 } from "./assets/Papers/ND/Paper5";
-import { paper6 } from "./assets/Papers/ND/Paper6";
+import { api } from "./api.js";
 
-import { SM_paper1 } from "./assets/Papers/SM/SM_Paper1";
-import { SM_paper2 } from "./assets/Papers/SM/SM_Paper2";
-import { SM_paper3 } from "./assets/Papers/SM/SM_Paper3";
-import { SM_paper4 } from "./assets/Papers/SM/SM_Paper4";
-import { SM_paper5 } from "./assets/Papers/SM/SM_Paper5";
-import { SM_paper6 } from "./assets/Papers/SM/SM_Paper6";
-
-import { JB_Paper1 } from "./assets/Papers/JB/JB_Paper1";
-
-export const ALL_PAPERS = {
-  1: paper1,
-  2: paper2,
-  3: paper3,
-  4: paper4,
-  5: paper5,
-  6: paper6,
-  7: SM_paper1,
-  8: SM_paper2,
-  9: SM_paper3,
-  10: SM_paper4,
-  11: SM_paper5,
-  12: SM_paper6,
-  13: JB_Paper1,
-};
-
-export const totalPaper = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,13];
+export const totalPaper = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 export const PAPER_NAMES = {
   1: "Practice Paper 1",
@@ -45,5 +15,44 @@ export const PAPER_NAMES = {
   10: "SM Paper 4",
   11: "SM Paper 5",
   12: "SM Paper 6",
-  13: "JB Paper 1",
 };
+
+// Question counts (used for display before a paper is loaded).
+export const paperSize = () => 65;
+export const TOTAL_QUESTIONS = totalPaper.reduce((s, n) => s + paperSize(n), 0);
+
+// Bundled copies, loaded lazily — only used if the API is unreachable.
+const BUNDLED = {
+  1: () => import("./assets/Papers/ND/Paper1.js").then((m) => m.paper1),
+  2: () => import("./assets/Papers/ND/Paper2.js").then((m) => m.paper2),
+  3: () => import("./assets/Papers/ND/Paper3.js").then((m) => m.paper3),
+  4: () => import("./assets/Papers/ND/Paper4.js").then((m) => m.paper4),
+  5: () => import("./assets/Papers/ND/Paper5.js").then((m) => m.paper5),
+  6: () => import("./assets/Papers/ND/Paper6.js").then((m) => m.paper6),
+  7: () => import("./assets/Papers/SM/SM_Paper1.js").then((m) => m.SM_paper1),
+  8: () => import("./assets/Papers/SM/SM_Paper2.js").then((m) => m.SM_paper2),
+  9: () => import("./assets/Papers/SM/SM_Paper3.js").then((m) => m.SM_paper3),
+  10: () => import("./assets/Papers/SM/SM_Paper4.js").then((m) => m.SM_paper4),
+  11: () => import("./assets/Papers/SM/SM_Paper5.js").then((m) => m.SM_paper5),
+  12: () => import("./assets/Papers/SM/SM_Paper6.js").then((m) => m.SM_paper6),
+};
+
+/** Questions for a paper: from the API, falling back to the bundled copy. */
+export async function loadPaper(n) {
+  try {
+    const { questions } = await api.get(`/papers/${n}`);
+    return questions;
+  } catch {
+    return BUNDLED[n]();
+  }
+}
+
+/** Study notes: from the API, falling back to the bundled copy. */
+export async function loadNotes() {
+  try {
+    const { topics } = await api.get("/notes");
+    return topics;
+  } catch {
+    return (await import("./notes.js")).default;
+  }
+}

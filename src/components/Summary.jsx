@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTheme } from "./ThemeContext.jsx";
 import { exportQuizToPDF } from "../utils/pdfExport.js";
 import DOMPurify from "dompurify";
@@ -186,8 +186,11 @@ export default function Summary({
         : `${timeSecs}s`
       : null;
 
+  const completedRef = useRef(false);
   useEffect(() => {
-    if (onPaperComplete) onPaperComplete(paperNum, scorePct);
+    if (completedRef.current) return;
+    completedRef.current = true;
+    if (onPaperComplete) onPaperComplete(paperNum, scorePct, { answers: userAnswers, timeTaken });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -15,7 +15,6 @@ import { SM_paper3 } from "../src/assets/Papers/SM/SM_Paper3.js";
 import { SM_paper4 } from "../src/assets/Papers/SM/SM_Paper4.js";
 import { SM_paper5 } from "../src/assets/Papers/SM/SM_Paper5.js";
 import { SM_paper6 } from "../src/assets/Papers/SM/SM_Paper6.js";
-import { JB_Paper1 } from "../src/assets/Papers/JB/JB_Paper1.js";
 import { NOTES_TOPICS } from "../src/notes.js";
 
 // Keep in sync with src/papers.js
@@ -26,7 +25,6 @@ const PAPERS = [
   [7, "SM Paper 1", SM_paper1], [8, "SM Paper 2", SM_paper2],
   [9, "SM Paper 3", SM_paper3], [10, "SM Paper 4", SM_paper4],
   [11, "SM Paper 5", SM_paper5], [12, "SM Paper 6", SM_paper6],
-  [13, "JB Paper 1", JB_Paper1],
 ];
 
 const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;

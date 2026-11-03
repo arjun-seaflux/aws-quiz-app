@@ -1,28 +1,84 @@
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import logoImg from "../assets/quiz-logo.png";
+import { useAuth } from "./AuthContext.jsx";
+import { useTheme } from "./ThemeContext.jsx";
+import { firstName } from "../utils/format.js";
 
-export default function Header({ selectedPaper, mode, onBackToHome, onBackToPapers, darkMode, onToggleTheme }) {
+const NAV = [
+  { to: "/", label: "Home", end: true },
+  { to: "/notes", label: "Notes" },
+  { to: "/practice", label: "Practice" },
+  { to: "/dashboard", label: "Dashboard" },
+];
+
+function UserMenu({ user, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [open]);
+
   return (
-    <header id="main-header">
-      <div className="header-left">
-        <img src={logoImg} alt="AWS Quiz logo" />
-        <div>
-          <h1>AWS Quiz</h1>
-          <p>DVA-C02 Mock Examination</p>
+    <div className="um" ref={ref}>
+      <button className="um-btn" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
+        <span className="um-avatar">{user.name.trim()[0]?.toUpperCase()}</span>
+        <span className="um-name">{firstName(user.name)}</span>
+        <span className="um-caret" aria-hidden>▾</span>
+      </button>
+      {open && (
+        <div className="um-menu" role="menu">
+          <div className="um-who">
+            <strong>{user.name}</strong>
+            <span>{user.email}</span>
+          </div>
+          <button role="menuitem" onClick={() => { setOpen(false); navigate("/dashboard"); }}>📊 My dashboard</button>
+          <button role="menuitem" onClick={() => { setOpen(false); onLogout(); }}>↩ Sign out</button>
         </div>
-      </div>
-      <div className="header-right-group">
-        <button className="theme-toggle" onClick={onToggleTheme}>
-          {darkMode ? "☀ Light" : "🌙 Dark"}
-        </button>
-        {selectedPaper && (
-          <button className="btn-back-home" onClick={onBackToPapers}>← All Papers</button>
-        )}
-        {mode !== 'landing' && (
-          <button className="btn-back-home btn-back-landing" onClick={onBackToHome}>🏠 Home</button>
-        )}
-        <div className="header-right">
-          <span className="live-dot"></span>
-          {mode === 'landing' ? 'Exam Prep' : mode === 'notes' ? 'Study Notes' : selectedPaper ? `Paper ${selectedPaper}` : 'Practice Mode'}
+      )}
+    </div>
+  );
+}
+
+export default function Header() {
+  const { user, setModal, logout, ready } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+
+  return (
+    <header className="hd">
+      <div className="hd-inner">
+        <Link to="/" className="hd-brand">
+          <img src={logoImg} alt="" />
+          <span>
+            <strong>AWS Quiz</strong>
+            <small>DVA-C02 prep</small>
+          </span>
+        </Link>
+
+        <nav className="hd-nav" aria-label="Main">
+          {NAV.map((n) => (
+            <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? "active" : "")}>
+              {n.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="hd-actions">
+          <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+          {ready && (user ? (
+            <UserMenu user={user} onLogout={logout} />
+          ) : (
+            <button className="btn btn-primary btn-sm" onClick={() => setModal("login")}>Sign in</button>
+          ))}
         </div>
       </div>
     </header>
