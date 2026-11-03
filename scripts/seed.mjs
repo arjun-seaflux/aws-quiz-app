@@ -40,6 +40,18 @@ try {
   await client.query("BEGIN");
   await client.query(readFileSync(new URL("../db/schema.sql", import.meta.url), "utf8"));
 
+  const schemaOnly = process.argv.includes("--schema-only");
+  const reset = process.argv.includes("--reset");
+  const existing = (await client.query("SELECT COUNT(*)::int AS n FROM questions")).rows[0].n;
+  if (schemaOnly || (existing > 0 && !reset)) {
+    await client.query("COMMIT");
+    console.log(schemaOnly
+      ? "Schema is up to date."
+      : `Schema is up to date. Content already loaded (${existing} questions) — left untouched. Use --reset to overwrite it.`);
+    await client.end();
+    process.exit(0);
+  }
+
   // Content is replaced wholesale; user data (users/attempts) is untouched.
   await client.query("DELETE FROM questions");
   await client.query("DELETE FROM papers");

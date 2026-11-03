@@ -13,7 +13,7 @@ export function isAnswerCorrect(userAnswer, q) {
 export async function bestScores(queryFn, userId) {
   const { rows } = await queryFn(
     `SELECT paper_num, MAX(score_pct)::int AS best
-       FROM attempts WHERE user_id = $1 GROUP BY paper_num`,
+       FROM attempts WHERE user_id = $1 AND kind = 'paper' GROUP BY paper_num`,
     [userId],
   );
   return Object.fromEntries(rows.map((r) => [r.paper_num, r.best]));

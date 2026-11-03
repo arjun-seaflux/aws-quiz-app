@@ -2,10 +2,13 @@ import bcrypt from "bcryptjs";
 import { query } from "../_lib/db.js";
 import { route, send } from "../_lib/http.js";
 import { createSession } from "../_lib/auth.js";
+import { limit } from "../_lib/ratelimit.js";
+import { appUrl, createToken, mailHtml, sendEmail } from "../_lib/email.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default route(["POST"], async (req, res) => {
+  if (!(await limit(req, res, "register", 10, 3600))) return;
   const { name, email, password } = req.body ?? {};
   const cleanName = String(name ?? "").trim();
   const cleanEmail = String(email ?? "").trim().toLowerCase();
@@ -24,6 +27,13 @@ export default route(["POST"], async (req, res) => {
        RETURNING id, email, name`,
       [cleanEmail, cleanName, hash],
     );
+    // Verification mail is best-effort — never block sign-up on it.
+    try {
+      const token = await createToken(rows[0].id, "verify", 60 * 24);
+      const url = `${appUrl(req)}/verify?token=${token}`;
+      await sendEmail({ to: cleanEmail, subject: "Verify your AWS Quiz email",
+        html: mailHtml("Confirm your email", "Welcome! Please confirm your email address.", url, "Verify email"), text: url });
+    } catch (e) { console.error("verify mail failed", e); }
     await createSession(res, rows[0]);
     send(res, 201, { user: rows[0] });
   } catch (err) {

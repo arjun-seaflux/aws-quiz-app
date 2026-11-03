@@ -9,7 +9,9 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "dev:api": "node --env-file-if-exists=.env.local scripts/dev-api.mjs",
-    "db:seed": "node --env-file-if-exists=.env.local scripts/seed.mjs"
+    "db:seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/seed.mjs --schema-only",
+    "db:reset": "node --env-file-if-exists=.env.local scripts/seed.mjs --reset"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { query } from "../_lib/db.js";
 import { route, send } from "../_lib/http.js";
 import { createSession } from "../_lib/auth.js";
+import { limit } from "../_lib/ratelimit.js";
 
 // Compared against when the email is unknown so timing doesn't reveal accounts.
 const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 10);
@@ -9,6 +10,7 @@ const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 10);
 export default route(["POST"], async (req, res) => {
   const { email, password } = req.body ?? {};
   const cleanEmail = String(email ?? "").trim().toLowerCase();
+  if (!(await limit(req, res, "login", 10, 900, cleanEmail))) return;
   const { rows } = await query(
     "SELECT id, email, name, password_hash FROM users WHERE email = $1",
     [cleanEmail],
