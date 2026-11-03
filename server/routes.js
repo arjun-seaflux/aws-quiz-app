@@ -1,5 +1,5 @@
 // Route table for the single /api function (Vercel's Hobby plan allows only 12 functions,
-// so every handler is bundled behind one catch-all in api/[...path].js).
+// so every handler is bundled behind one catch-all in api/index.js).
 // ":name" segments become req.query.name.
 import h0 from "./activity.js";
 import h1 from "./admin/question.js";

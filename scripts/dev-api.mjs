@@ -1,7 +1,7 @@
 // Local stand-in for Vercel: parses JSON bodies and calls the same catch-all function
-// that production uses (api/[...path].js). Vite proxies /api here (see vite.config.js).
+// that production uses (api/index.js). Vite proxies /api here (see vite.config.js).
 import http from "node:http";
-import handler from "../api/[...path].js";
+import handler from "../api/index.js";
 
 const PORT = Number(process.env.API_PORT || 3001);
 
