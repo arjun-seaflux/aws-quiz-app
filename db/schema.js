@@ -170,4 +170,35 @@ CREATE TABLE IF NOT EXISTS room_players (
   PRIMARY KEY (room_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS room_players_user_idx ON room_players (user_id);
+
+-- ═══ v3: community papers + mixed-question competitions ═════════════════
+-- A user-made paper is an ordered list of question keys. Questions the author
+-- writes themselves live in "questions" under paper_num = 10000 + paper id.
+CREATE TABLE IF NOT EXISTS user_papers (
+  id             serial PRIMARY KEY,
+  owner_id       uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title          text NOT NULL,
+  description    text NOT NULL DEFAULT '',
+  status         text NOT NULL DEFAULT 'private',   -- private | pending | approved | rejected
+  review_note    text,
+  question_count int  NOT NULL DEFAULT 0,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now(),
+  approved_at    timestamptz,
+  approved_by    uuid REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS user_papers_status_idx ON user_papers (status, approved_at DESC);
+CREATE INDEX IF NOT EXISTS user_papers_owner_idx  ON user_papers (owner_id);
+
+CREATE TABLE IF NOT EXISTS user_paper_items (
+  paper_id  int NOT NULL REFERENCES user_papers(id) ON DELETE CASCADE,
+  position  int NOT NULL,
+  src_paper int NOT NULL,
+  src_pos   int NOT NULL,
+  PRIMARY KEY (paper_id, position)
+);
+
+-- Competitions now draw from the whole bank: the question set is a list of "paper:pos" keys.
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS keys text[];
+ALTER TABLE rooms ALTER COLUMN positions DROP NOT NULL;
 `;

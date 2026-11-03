@@ -3,6 +3,8 @@ import { route, send } from "./_lib/http.js";
 import { requireUser, parseKey } from "./_lib/guard.js";
 import { bestScores } from "./_lib/scoring.js";
 import { saveAttempt } from "./_lib/attempts.js";
+import { authoredNum, canView, getPaper, paperQuestions } from "./_lib/community.js";
+import { isAdminEmail } from "./_lib/guard.js";
 
 export default route(["GET", "POST"], async (req, res) => {
   const session = await requireUser(req, res);
@@ -42,6 +44,14 @@ export default route(["GET", "POST"], async (req, res) => {
       return { srcPaper: k.paper, srcPos: k.pos, qid: r.qid, data: r.data, answer: answers[i], secs: secsAt(i) };
     });
     attemptPaper = 0;
+  } else if (kind === "community") {
+    const id = Number(req.body?.paperId);
+    const paper = Number.isInteger(id) ? await getPaper(query, id) : null;
+    if (!paper || !canView(paper, session.id, isAdminEmail(session.email))) return send(res, 404, { error: "Paper not found." });
+    const qs = await paperQuestions(query, id);
+    if (answers.length !== qs.length) return send(res, 400, { error: "Answer count does not match the paper." });
+    items = qs.map((r, i) => ({ srcPaper: r.src_paper, srcPos: r.src_pos, qid: r.qid, data: r.data, answer: answers[i], secs: secsAt(i) }));
+    attemptPaper = authoredNum(id);
   } else if (kind === "paper") {
     const n = Number(paperNum);
     if (!Number.isInteger(n)) return send(res, 400, { error: "paperNum is required." });

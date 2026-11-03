@@ -17,6 +17,10 @@ const Leaderboard = lazy(() => import("./pages/Leaderboard.jsx"));
 const Admin = lazy(() => import("./pages/Admin.jsx"));
 const Compete = lazy(() => import("./pages/Compete.jsx"));
 const Room = lazy(() => import("./pages/Room.jsx"));
+const Papers = lazy(() => import("./pages/Papers.jsx"));
+const PaperBuilder = lazy(() => import("./pages/PaperBuilder.jsx"));
+const CommunityPaperPage = lazy(() => import("./pages/CommunityPaper.jsx").then((m) => ({ default: m.CommunityPaperPage })));
+const CommunityPlay = lazy(() => import("./pages/CommunityPaper.jsx").then((m) => ({ default: m.CommunityPlay })));
 const ForgotPassword = lazy(() => import("./pages/AccountLinks.jsx").then((m) => ({ default: m.ForgotPassword })));
 const ResetPassword = lazy(() => import("./pages/AccountLinks.jsx").then((m) => ({ default: m.ResetPassword })));
 const VerifyEmail = lazy(() => import("./pages/AccountLinks.jsx").then((m) => ({ default: m.VerifyEmail })));
@@ -34,6 +38,11 @@ export default function App() {
           <Route path="practice" element={<Practice />} />
           <Route path="practice/custom" element={<CustomPractice />} />
           <Route path="practice/:paperNum" element={<Exam />} />
+          <Route path="papers" element={<Papers />} />
+          <Route path="papers/new" element={<PaperBuilder />} />
+          <Route path="papers/:id" element={<CommunityPaperPage />} />
+          <Route path="papers/:id/edit" element={<PaperBuilder />} />
+          <Route path="papers/:id/play" element={<CommunityPlay />} />
           <Route path="review" element={<Review />} />
           <Route path="saved" element={<Saved />} />
           <Route path="leaderboard" element={<Leaderboard />} />

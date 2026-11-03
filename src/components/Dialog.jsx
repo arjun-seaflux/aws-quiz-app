@@ -9,7 +9,7 @@ const FOCUSABLE = 'button:not([disabled]), [href], input, select, textarea, [tab
  * trapped while open, and returns to the trigger on close.
  * `tone`: "primary" | "warn" | "danger" — colours the icon badge.
  */
-export default function Dialog({ open, onClose, title, icon: Icon, tone = "primary", children, actions }) {
+export default function Dialog({ open, onClose, title, icon: Icon, tone = "primary", children, actions, wide = false }) {
   const panel = useRef(null);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function Dialog({ open, onClose, title, icon: Icon, tone = "prima
   if (!open) return null;
   return createPortal(
     <div className="dlg-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlg-title" tabIndex={-1} ref={panel}>
+      <div className={`dlg${wide ? " dlg--wide" : ""}`} role="alertdialog" aria-modal="true" aria-labelledby="dlg-title" tabIndex={-1} ref={panel}>
         <button className="dlg-x" onClick={onClose} aria-label="Close"><X size={18} /></button>
         {Icon && <span className={`dlg-icon dlg-icon--${tone}`}><Icon size={26} strokeWidth={2} /></span>}
         <h2 id="dlg-title">{title}</h2>

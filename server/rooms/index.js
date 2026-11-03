@@ -14,7 +14,7 @@ export default route(["GET", "POST"], async (req, res) => {
   if (req.method === "GET") {
     const { rows } = await query(
       `SELECT r.code, r.status, r.paper_num, r.duration_min, r.created_at, r.host_id = $1 AS is_host,
-              array_length(r.positions, 1) AS question_count,
+              COALESCE(array_length(r.keys, 1), array_length(r.positions, 1)) AS question_count,
               (SELECT COUNT(*)::int FROM room_players p WHERE p.room_id = r.id) AS players,
               me.score_pct
          FROM room_players me JOIN rooms r ON r.id = me.room_id
@@ -23,28 +23,29 @@ export default route(["GET", "POST"], async (req, res) => {
   }
 
   if (!(await hit(`room-create:${s.id}`, 20, 3600))) return send(res, 429, { error: "Too many rooms created — try later." });
-  const paperNum = Number(req.body?.paperNum);
   const count = Number(req.body?.count);
   const durationMin = Number(req.body?.durationMin);
   const maxPlayers = Number(req.body?.maxPlayers ?? 20);
-  if (![paperNum, count, durationMin, maxPlayers].every(Number.isInteger))
-    return send(res, 400, { error: "paperNum, count, durationMin and maxPlayers must be whole numbers." });
+  if (![count, durationMin, maxPlayers].every(Number.isInteger))
+    return send(res, 400, { error: "count, durationMin and maxPlayers must be whole numbers." });
   if (count < 5 || count > 65) return send(res, 400, { error: "Choose 5–65 questions." });
   if (durationMin < 3 || durationMin > 180) return send(res, 400, { error: "Choose 3–180 minutes." });
   if (maxPlayers < 2 || maxPlayers > 50) return send(res, 400, { error: "Choose 2–50 players." });
 
-  const { rows: pos } = await query(
-    "SELECT position FROM questions WHERE paper_num = $1 ORDER BY random() LIMIT $2", [paperNum, count]);
-  if (pos.length < 5) return send(res, 404, { error: "Paper not found." });
+  // Questions come from anywhere in the main bank, shuffled once so everyone gets the same order.
+  const { rows: picked } = await query(
+    "SELECT paper_num, position FROM questions WHERE paper_num < 1000 ORDER BY random() LIMIT $1", [count]);
+  if (picked.length < 5) return send(res, 404, { error: "Not enough questions available." });
+  const keys = picked.map((p) => `${p.paper_num}:${p.position}`);
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = makeCode();
     try {
       const room = await withTx(async (c) => {
         const r = await c.query(
-          `INSERT INTO rooms (code, host_id, paper_num, positions, duration_min, max_players)
-           VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, code`,
-          [code, s.id, paperNum, pos.map((p) => p.position), durationMin, maxPlayers]);
+          `INSERT INTO rooms (code, host_id, paper_num, positions, keys, duration_min, max_players)
+           VALUES ($1,$2,0,'{}',$3,$4,$5) RETURNING id, code`,
+          [code, s.id, keys, durationMin, maxPlayers]);
         await c.query("INSERT INTO room_players (room_id, user_id) VALUES ($1,$2)", [r.rows[0].id, s.id]);
         return r.rows[0];
       });

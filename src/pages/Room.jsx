@@ -7,6 +7,7 @@ import { useAuth } from "../components/AuthContext.jsx";
 import { PAPER_NAMES } from "../papers.js";
 import { formatDuration } from "../utils/format.js";
 
+const topicLabel = (room) => (room.paperNum ? PAPER_NAMES[room.paperNum] : "Mixed questions from every paper");
 const initial = (n) => (n || "?").trim()[0]?.toUpperCase();
 
 function Standings({ players, total, compact }) {
@@ -133,7 +134,7 @@ export default function Room() {
   const link = `${window.location.origin}/compete/${code}`;
   const copy = async () => { try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* ignore */ } };
   const share = () => (navigator.share
-    ? navigator.share({ title: "Join my AWS Quiz competition", text: `Race me on ${PAPER_NAMES[room.paperNum]}!`, url: link }).catch(() => {})
+    ? navigator.share({ title: "Join my AWS Quiz competition", text: `Race me on ${room.questionCount} AWS questions!`, url: link }).catch(() => {})
     : copy());
   const act = async (action) => { setBusy(true); try { setSnap(await api.post(`/rooms/${code}`, { action })); } catch (e) { setError(e); } setBusy(false); };
   const leave = async () => { await api.post(`/rooms/${code}`, { action: "leave" }).catch(() => {}); navigate("/compete"); };
@@ -174,7 +175,7 @@ export default function Room() {
       <div>
         <h1><span className="mono">{code}</span></h1>
         <p className="muted">
-          {PAPER_NAMES[room.paperNum]} · <ListChecks size={14} /> {room.questionCount} questions · <Clock size={14} /> {room.durationMin} min · <Users size={14} /> up to {room.maxPlayers}
+          {topicLabel(room)} · <ListChecks size={14} /> {room.questionCount} questions · <Clock size={14} /> {room.durationMin} min · <Users size={14} /> up to {room.maxPlayers}
         </p>
       </div>
       <span className={`pill ${room.status === "live" ? "pill--retry" : room.status === "finished" ? "pill--passed" : ""}`}>
@@ -240,7 +241,7 @@ export default function Room() {
   if (room.status === "live" && startsIn !== null && startsIn > 0)
     return (
       <div className="countdown" role="status" aria-live="assertive">
-        <p className="muted">Get ready — {PAPER_NAMES[room.paperNum]}</p>
+        <p className="muted">Get ready — mixed questions from every paper</p>
         <div className="count-num" key={startsIn}>{startsIn}</div>
         <p className="muted">{snap.players.length} player{snap.players.length > 1 ? "s" : ""} · {room.questionCount} questions · {room.durationMin} minutes</p>
       </div>
@@ -267,6 +268,7 @@ export default function Room() {
           <Quiz
             questions={qs.questions}
             paperNum={room.paperNum}
+            title="Competition"
             mode="room"
             startedAt={room.startsAt - offset.current}
             deadlineAt={room.deadline - offset.current}

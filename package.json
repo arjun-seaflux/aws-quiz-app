@@ -11,7 +11,9 @@
     "dev:api": "node --env-file-if-exists=.env.local scripts/dev-api.mjs",
     "db:seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/seed.mjs --schema-only",
-    "db:reset": "node --env-file-if-exists=.env.local scripts/seed.mjs --reset"
+    "db:reset": "node --env-file-if-exists=.env.local scripts/seed.mjs --reset",
+    "gen:routes": "node scripts/gen-routes.mjs",
+    "prebuild": "node scripts/gen-routes.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -211,7 +211,7 @@ export default function Dashboard() {
               <tbody>
                 {data.attempts.slice(0, 50).map((a) => (
                   <tr key={a.id}>
-                    <td>{a.kind === "practice" ? "Custom practice" : PAPER_NAMES[a.paper_num] ?? `Paper ${a.paper_num}`}{a.kind === "room" && <span className="tag">competition</span>}{a.source === "import" && <span className="tag">imported</span>}</td>
+                    <td>{a.kind === "practice" ? "Custom practice" : a.kind === "community" ? "Community paper" : PAPER_NAMES[a.paper_num] ?? `Paper ${a.paper_num}`}{a.kind === "room" && <span className="tag">competition</span>}{a.source === "import" && <span className="tag">imported</span>}</td>
                     <td>{formatDate(a.created_at)}</td>
                     <td><span className={`pill ${a.score_pct >= PASS_MARK ? "pill--passed" : "pill--retry"}`}>{a.score_pct}%</span></td>
                     <td>{a.source === "import" ? "—" : `${a.correct} / ${a.wrong} / ${a.skipped}`}</td>

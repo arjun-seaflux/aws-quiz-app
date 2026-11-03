@@ -1,18 +1,7 @@
 import { query } from "../_lib/db.js";
 import { route, send } from "../_lib/http.js";
 import { requireAdmin, parseKey } from "../_lib/guard.js";
-
-function validate(d) {
-  if (!d || typeof d !== "object") return "Question must be an object.";
-  if (typeof d.text !== "string" || !d.text.trim()) return "text is required.";
-  if (!Array.isArray(d.answers) || d.answers.length < 2 || d.answers.some((a) => typeof a !== "string"))
-    return "answers must be an array of at least two strings.";
-  const idx = Array.isArray(d.correctAnswerIndices) ? d.correctAnswerIndices : [d.correctAnswerIndex];
-  if (!idx.length || idx.some((i) => !Number.isInteger(i) || i < 0 || i >= d.answers.length))
-    return "correct answer index is out of range.";
-  if (d.isMultiSelect && !Array.isArray(d.correctAnswerIndices)) return "multi-select needs correctAnswerIndices.";
-  return null;
-}
+import { validateQuestion as validate } from "../_lib/questionShape.js";
 
 export default route(["GET", "POST"], async (req, res) => {
   if (!(await requireAdmin(req, res))) return;

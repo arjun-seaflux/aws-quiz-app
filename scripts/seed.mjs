@@ -53,8 +53,9 @@ try {
   }
 
   // Content is replaced wholesale; user data (users/attempts) is untouched.
-  await client.query("DELETE FROM questions");
-  await client.query("DELETE FROM papers");
+  // Community-authored questions (paper_num >= 10000) are user data and are never touched.
+  await client.query("DELETE FROM questions WHERE paper_num < 10000");
+  await client.query("DELETE FROM papers WHERE num < 10000");
   await client.query("DELETE FROM topics");
 
   let qCount = 0;

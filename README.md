@@ -7,10 +7,11 @@ React (Vite) frontend · Vercel serverless API (`/api`) · Neon Postgres. Instal
 - **Practice**: 12 timed papers (exam mode) or untimed with instant feedback (practice mode); resume unfinished exams on any device; keyboard shortcuts (A–E / 1–5, ← →, F).
 - **Custom practice**: weak areas, your mistakes, by domain, by topic, random mix.
 - **Review**: mistake notebook + spaced-repetition flashcards (Leitner boxes), "study this topic" links from every question.
-- **Compete**: invite friends with a link or code — same questions, same start time and time limit, live standings and a podium.
+- **Compete**: invite friends with a link or code — questions drawn at random from every paper, the same start time and time limit for everyone, live standings and a podium.
+- **Community papers** (`/papers`): build your own paper (20–100 questions, picked from the bank and/or written yourself). It starts private; submit it and an admin approves it to make it public.
 - **Dashboard**: exam-readiness score, score trend, accuracy by domain, streak + daily goal + activity heatmap, attempt history, per-question time.
 - **Accounts**: sign-up/in, password reset and email verification, opt-in public leaderboard, guest mode (scores import on sign-in).
-- **Admin** (`/admin`): review learner reports and edit questions in place.
+- **Admin** (`/admin`): approve or send back community papers (with a note), review learner reports and edit questions in place.
 
 ## Setup
 1. Vercel project → **Storage → Create → Neon** (sets `DATABASE_URL`).
@@ -46,7 +47,7 @@ npm run dev                  # Vite on :5173, proxies /api
 | Path | What |
 |---|---|
 | `api/index.js` | The single serverless function (Vercel's Hobby plan allows 12) |
-| `server/` | API handlers + `routes.js` route table — add a handler here and register it in `routes.js` |
+| `server/` | API handlers. `routes.js` is generated from the files by `npm run gen:routes` (also runs before every build) |
 | `db/schema.js` | Idempotent Postgres schema |
 | `scripts/seed.mjs` | Loads content from `src/` into the database |
 | `shared/` | Code used by both the API and the browser (topic keywords) |

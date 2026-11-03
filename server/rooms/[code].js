@@ -13,12 +13,19 @@ async function loadRoom(code) {
   return rows[0] ?? null;
 }
 
+// A room's question set: "paper:pos" keys (mixed bank). Rooms created before that
+// stored a single paper + positions, which is still supported.
+const roomKeys = (room) => room.keys ?? room.positions.map((p) => `${room.paper_num}:${p}`);
+const roomSize = (room) => roomKeys(room).length;
+
 async function roomQuestions(room) {
+  const keys = roomKeys(room).map((k) => k.split(":").map(Number));
   const { rows } = await query(
-    "SELECT position, qid, data FROM questions WHERE paper_num = $1 AND position = ANY($2::int[])",
-    [room.paper_num, room.positions]);
-  const byPos = new Map(rows.map((r) => [r.position, r]));
-  return room.positions.map((p) => byPos.get(p)).filter(Boolean);
+    `SELECT q.paper_num, q.position, q.qid, q.data FROM unnest($1::int[], $2::int[]) AS t(p, s)
+       JOIN questions q ON q.paper_num = t.p AND q.position = t.s`,
+    [keys.map((k) => k[0]), keys.map((k) => k[1])]);
+  const byKey = new Map(rows.map((r) => [`${r.paper_num}:${r.position}`, r]));
+  return roomKeys(room).map((k) => byKey.get(k)).filter(Boolean);
 }
 
 /** Grades + records one player's round exactly once (claimed via finished_at). */
@@ -32,7 +39,7 @@ async function finalizePlayer(room, userId, answers, timeTaken) {
     if (!claim.rows[0]) return null; // already finished by another request
     const given = Array.isArray(answers) ? answers : (claim.rows[0].answers ?? []);
     const items = qs.map((q, i) => ({
-      srcPaper: room.paper_num, srcPos: q.position, qid: q.qid, data: q.data, answer: given[i] ?? null,
+      srcPaper: q.paper_num, srcPos: q.position, qid: q.qid, data: q.data, answer: given[i] ?? null,
     }));
     const attempt = await saveAttempt(c, { userId, paperNum: room.paper_num, kind: "room", items, timeTaken });
     await c.query(
@@ -79,7 +86,7 @@ async function state(room, userId) {
   return {
     room: {
       code: room.code, status: room.status, paperNum: room.paper_num, durationMin: room.duration_min,
-      questionCount: room.positions.length, maxPlayers: room.max_players,
+      questionCount: roomSize(room), maxPlayers: room.max_players,
       startsAt: room.starts_at ? new Date(room.starts_at).getTime() : null,
       deadline: room.starts_at ? deadlineMs(room) : null, hostId: room.host_id,
     },
@@ -108,7 +115,7 @@ export default route(["GET", "POST"], async (req, res) => {
         return send(res, 425, { error: "The round has not started yet." });
       const qs = await roomQuestions(room);
       return send(res, 200, {
-        questions: qs.map((q) => ({ ...q.data, _key: `${room.paper_num}:${q.position}` })),
+        questions: qs.map((q) => ({ ...q.data, _key: `${q.paper_num}:${q.position}` })),
         myAnswers: me.rows[0].answers ?? null, serverNow: Date.now(),
       });
     }
@@ -154,7 +161,7 @@ export default route(["GET", "POST"], async (req, res) => {
   if (action === "progress") {
     if (Date.now() < startMs - 1000 || Date.now() > deadlineMs(room) + GRACE_MS)
       return send(res, 409, { error: "Outside the round window." });
-    const answers = cleanAnswers(req.body.answers, room.positions.length);
+    const answers = cleanAnswers(req.body.answers, roomSize(room));
     if (!answers) return send(res, 400, { error: "Invalid answers." });
     await query("UPDATE room_players SET answers=$3, answered=$4 WHERE room_id=$1 AND user_id=$2 AND finished_at IS NULL",
       [room.id, s.id, JSON.stringify(answers), answers.filter((a) => a != null).length]);
@@ -163,7 +170,7 @@ export default route(["GET", "POST"], async (req, res) => {
 
   if (action === "finish") {
     if (Date.now() < startMs) return send(res, 409, { error: "The round has not started." });
-    const answers = cleanAnswers(req.body.answers, room.positions.length);
+    const answers = cleanAnswers(req.body.answers, roomSize(room));
     if (!answers) return send(res, 400, { error: "Invalid answers." });
     const taken = Math.min(room.duration_min * 60, Math.max(0, Math.round((Date.now() - startMs) / 1000)));
     await finalizePlayer(room, s.id, answers, taken);

@@ -21,6 +21,6 @@ export async function requireAdmin(req, res) {
 
 /** A question key is "paper:position". */
 export function parseKey(key) {
-  const m = /^(\d{1,3}):(\d{1,3})$/.exec(String(key));
+  const m = /^(\d{1,6}):(\d{1,4})$/.exec(String(key));
   return m ? { paper: Number(m[1]), pos: Number(m[2]) } : null;
 }

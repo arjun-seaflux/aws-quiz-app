@@ -3,14 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Clock, Hash, ListChecks, Swords, Users } from "lucide-react";
 import { api } from "../api.js";
 import { useAuth } from "../components/AuthContext.jsx";
-import { PAPER_NAMES, totalPaper } from "../papers.js";
 
 const STATUS = { lobby: "Waiting", live: "Live", finished: "Finished" };
 
 export default function Compete() {
   const { user, ready, setModal } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ paperNum: 1, count: 20, durationMin: 40, maxPlayers: 10 });
+  const [form, setForm] = useState({ count: 20, durationMin: 40, maxPlayers: 10 });
   const [auto, setAuto] = useState(true);
   const [joinCode, setJoinCode] = useState("");
   const [rooms, setRooms] = useState(null);
@@ -54,10 +53,6 @@ export default function Compete() {
         <form className="card" onSubmit={create}>
           <h2 className="section-title"><Swords size={18} /> Start a competition</h2>
           <div className="form-grid">
-            <label className="field"><span>Paper</span>
-              <select className="select" value={form.paperNum} onChange={set("paperNum")}>
-                {totalPaper.map((n) => <option key={n} value={n}>{PAPER_NAMES[n]}</option>)}
-              </select></label>
             <label className="field"><span>Questions</span>
               <select className="select" value={form.count} onChange={set("count")}>
                 {[5, 10, 20, 30, 40, 65].map((n) => <option key={n} value={n}>{n}</option>)}
@@ -73,7 +68,7 @@ export default function Compete() {
           <button className="btn btn-primary btn-lg" disabled={busy}>
             {user ? "Create room" : "Sign in to create a room"} <ArrowRight size={16} />
           </button>
-          <p className="muted small">You'll get an invite link to share. Questions are hidden until the host starts a 10-second countdown.</p>
+          <p className="muted small">Questions are picked at random from across every paper, so nobody can prepare for a specific one. You'll get an invite link to share; the questions stay hidden until the host starts a 10-second countdown.</p>
         </form>
 
         <div>

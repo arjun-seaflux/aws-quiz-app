@@ -224,6 +224,7 @@ export default function Quiz({
   onProgress,
   proctor = mode === "exam",
   backLabel = "Back to All Papers",
+  title,
   submitTitle = mode === "practice" ? "Finish practice?" : "Submit your exam?",
   submitLabel = mode === "practice" ? "Finish practice" : "Submit exam",
 }) {
@@ -467,7 +468,7 @@ export default function Quiz({
       )}
 
       <div id="quiz-header">
-        <span id="quiz-title">DVA-C02 · {paperNum > 0 ? `Paper ${paperNum}` : "Custom practice"}</span>
+        <span id="quiz-title">DVA-C02 · {title ?? (paperNum > 0 ? `Paper ${paperNum}` : "Custom practice")}</span>
         <div id="quiz-meta">
           <span>
             {answeredCount} / {questions.length} answered
