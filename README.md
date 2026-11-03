@@ -45,7 +45,8 @@ npm run dev                  # Vite on :5173, proxies /api
 ## Layout
 | Path | What |
 |---|---|
-| `api/` | Serverless functions (auth, attempts, practice, cards, rooms, admin …) |
+| `api/[...path].js` | The single serverless function (Vercel's Hobby plan allows 12) |
+| `server/` | API handlers + `routes.js` route table — add a handler here and register it in `routes.js` |
 | `db/schema.js` | Idempotent Postgres schema |
 | `scripts/seed.mjs` | Loads content from `src/` into the database |
 | `shared/` | Code used by both the API and the browser (topic keywords) |
