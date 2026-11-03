@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { Check } from "lucide-react";
 
 const LETTERS = ["A", "B", "C", "D", "E"];
 
@@ -34,7 +35,7 @@ export default function Answers({
               className={isSelected ? "selected" : ""}
             >
               <span className={`answer-letter${isMultiSelect ? " multi" : ""}`}>
-                {isMultiSelect ? (isSelected ? "✓" : LETTERS[i]) : LETTERS[i]}
+                {isMultiSelect && isSelected ? <Check size={14} strokeWidth={3} /> : LETTERS[i]}
               </span>
               {answer}
             </button>

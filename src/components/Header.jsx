@@ -4,6 +4,7 @@ import logoImg from "../assets/quiz-logo.png";
 import { useAuth } from "./AuthContext.jsx";
 import { useTheme } from "./ThemeContext.jsx";
 import { firstName } from "../utils/format.js";
+import { ChevronDown, LayoutDashboard, LogOut, Moon, Sun } from "lucide-react";
 
 const NAV = [
   { to: "/", label: "Home", end: true },
@@ -31,7 +32,7 @@ function UserMenu({ user, onLogout }) {
       <button className="um-btn" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
         <span className="um-avatar">{user.name.trim()[0]?.toUpperCase()}</span>
         <span className="um-name">{firstName(user.name)}</span>
-        <span className="um-caret" aria-hidden>▾</span>
+        <ChevronDown className="um-caret" size={15} aria-hidden />
       </button>
       {open && (
         <div className="um-menu" role="menu">
@@ -39,8 +40,8 @@ function UserMenu({ user, onLogout }) {
             <strong>{user.name}</strong>
             <span>{user.email}</span>
           </div>
-          <button role="menuitem" onClick={() => { setOpen(false); navigate("/dashboard"); }}>📊 My dashboard</button>
-          <button role="menuitem" onClick={() => { setOpen(false); onLogout(); }}>↩ Sign out</button>
+          <button role="menuitem" onClick={() => { setOpen(false); navigate("/dashboard"); }}><LayoutDashboard size={16} /> My dashboard</button>
+          <button role="menuitem" onClick={() => { setOpen(false); onLogout(); }}><LogOut size={16} /> Sign out</button>
         </div>
       )}
     </div>
@@ -72,7 +73,7 @@ export default function Header() {
 
         <div className="hd-actions">
           <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
-            {theme === "dark" ? "☀️" : "🌙"}
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           {ready && (user ? (
             <UserMenu user={user} onLogout={logout} />

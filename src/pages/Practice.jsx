@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Lock } from "lucide-react";
 import { useAuth } from "../components/AuthContext.jsx";
 import { PAPER_NAMES, paperSize, totalPaper } from "../papers.js";
 import { PASS_MARK, UNLOCK_THRESHOLD, computeUnlocked } from "../scores.js";
@@ -32,14 +33,14 @@ function PaperCard({ num, score, locked }) {
       onClick={() => navigate(`/practice/${num}`)}
     >
       <div className="paper-card-top">
-        <span className="paper-num">{locked ? "🔒" : num}</span>
+        <span className="paper-num">{locked ? <Lock size={20} /> : num}</span>
         {score != null && !locked ? <Ring value={score} /> : null}
       </div>
       <h3>{PAPER_NAMES[num]}</h3>
       <p className="muted">{paperSize(num)} questions · 130 min</p>
       <div className="paper-card-foot">
         <span className={`pill pill--${status}`}>{label}</span>
-        <span className="paper-go">{locked ? `Score ${UNLOCK_THRESHOLD}% on paper ${num - 1}` : score == null ? "Start →" : "Retake →"}</span>
+        <span className="paper-go">{locked ? `Score ${UNLOCK_THRESHOLD}% on paper ${num - 1}` : <>{score == null ? "Start" : "Retake"} <ArrowRight size={14} /></>}</span>
       </div>
     </button>
   );
@@ -68,7 +69,7 @@ export default function Practice() {
       {!user && (
         <div className="notice">
           <span>Scores are saved in this browser only.</span>
-          <button className="link-btn" onClick={() => setModal("register")}>Create an account to keep them →</button>
+          <button className="link-btn" onClick={() => setModal("register")}>Create an account to keep them <ArrowRight size={14} /></button>
         </div>
       )}
 
@@ -85,7 +86,7 @@ export default function Practice() {
 
       <p className="muted center">
         Rules: tab-switching during an exam triggers warnings, and the fourth switch abandons the attempt.{" "}
-        <Link to="/notes">Review the notes first →</Link>
+        <Link to="/notes">Review the notes first <ArrowRight size={14} /></Link>
       </p>
     </div>
   );

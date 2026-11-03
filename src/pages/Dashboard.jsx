@@ -5,6 +5,7 @@ import { useAuth } from "../components/AuthContext.jsx";
 import { PAPER_NAMES, totalPaper } from "../papers.js";
 import { PASS_MARK } from "../scores.js";
 import { formatDate, formatDuration } from "../utils/format.js";
+import { AlertTriangle, ArrowRight, BarChart3 } from "lucide-react";
 
 function Trend({ attempts }) {
   const pts = [...attempts].reverse().slice(-20); // oldest → newest
@@ -50,7 +51,7 @@ export default function Dashboard() {
   if (!user)
     return (
       <div className="empty-state">
-        <div className="empty-emoji">📊</div>
+        <div className="empty-icon"><BarChart3 size={40} /></div>
         <h1>Your dashboard</h1>
         <p>Sign in to see score trends, attempt history and accuracy by exam domain.
           {Object.keys(scores).length > 0 && " Your existing guest scores will be imported automatically."}</p>
@@ -61,7 +62,7 @@ export default function Dashboard() {
       </div>
     );
 
-  if (error) return <div className="empty-state"><div className="empty-emoji">⚠️</div><p>Couldn't load your stats. Try again shortly.</p></div>;
+  if (error) return <div className="empty-state"><div className="empty-icon"><AlertTriangle size={40} /></div><p>Couldn't load your stats. Try again shortly.</p></div>;
   if (!data) return <div className="loading-block"><span className="spinner" /> Loading your stats…</div>;
 
   const quiz = data.attempts.filter((a) => a.source === "quiz");
@@ -105,7 +106,7 @@ export default function Dashboard() {
                   <span className="domain-pct">{d.pct}%</span>
                 </div>
               ))}
-              <p className="muted small">Lowest first — start with the top one. <Link to="/notes">Open notes →</Link></p>
+              <p className="muted small">Lowest first — start with the top one. <Link to="/notes">Open notes <ArrowRight size={13} /></Link></p>
             </div>
           )}
         </section>

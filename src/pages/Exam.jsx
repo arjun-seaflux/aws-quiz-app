@@ -4,6 +4,7 @@ import Quiz from "../components/Quiz.jsx";
 import { useAuth } from "../components/AuthContext.jsx";
 import { loadPaper, totalPaper } from "../papers.js";
 import { computeUnlocked } from "../scores.js";
+import { AlertTriangle } from "lucide-react";
 
 export default function Exam() {
   const { paperNum } = useParams();
@@ -35,7 +36,7 @@ export default function Exam() {
   if (error)
     return (
       <div className="empty-state">
-        <div className="empty-emoji">⚠️</div>
+        <div className="empty-icon"><AlertTriangle size={40} /></div>
         <h1>Couldn't load this paper</h1>
         <p>Check your connection and try again.</p>
         <button className="btn btn-primary" onClick={() => setAttempt((a) => a + 1)}>Retry</button>

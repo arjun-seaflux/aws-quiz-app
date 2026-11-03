@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext.jsx";
+import { Check, Cloud, Eye, EyeOff, X } from "lucide-react";
 
 export default function AuthModal() {
   const { modal, setModal, login, register } = useAuth();
@@ -40,14 +41,14 @@ export default function AuthModal() {
   return (
     <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setModal(null); }}>
       <div className="auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-        <button className="modal-close" onClick={() => setModal(null)} aria-label="Close">✕</button>
+        <button className="modal-close" onClick={() => setModal(null)} aria-label="Close"><X size={18} /></button>
         <div className="auth-art" aria-hidden>
-          <span>☁️</span>
+          <Cloud size={46} strokeWidth={1.6} />
           <p>Your progress, everywhere.</p>
           <ul>
-            <li>Scores saved across devices</li>
-            <li>Full attempt history</li>
-            <li>Weak-area insights</li>
+            <li><Check size={16} /> Scores saved across devices</li>
+            <li><Check size={16} /> Full attempt history</li>
+            <li><Check size={16} /> Weak-area insights</li>
           </ul>
         </div>
         <form className="auth-form" onSubmit={submit}>
@@ -78,7 +79,7 @@ export default function AuthModal() {
                 required
               />
               <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"}>
-                {show ? "Hide" : "Show"}
+                {show ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
             {isRegister && <small>At least 8 characters.</small>}

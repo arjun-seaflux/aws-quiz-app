@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Question from "./Question.jsx";
 import Summary from "./Summary.jsx";
+import { AlertTriangle, ArrowLeft, Ban, ChevronLeft, ChevronRight, OctagonX, Send, Siren, Timer } from "lucide-react";
+import Dialog from "./Dialog.jsx";
 
 const EXAM_DURATION = 130 * 60; // 130 minutes in seconds
 const MAX_WARNINGS = 3;         // 3 warnings shown, 4th switch = abandon
@@ -20,7 +22,7 @@ function TabWarningModal({ warningNumber, onDismiss }) {
   const borderColor = warningNumber === 1 ? "#f59e0b" : warningNumber === 2 ? "#f97316" : "#ef4444";
   const titleColor = warningNumber === 1 ? "#92400e" : warningNumber === 2 ? "#7c2d12" : "#991b1b";
   const btnColor = warningNumber === 1 ? "#f59e0b" : warningNumber === 2 ? "#f97316" : "#ef4444";
-  const icon = warningNumber === 1 ? "⚠️" : warningNumber === 2 ? "🚨" : "🛑";
+  const Icon = warningNumber === 1 ? AlertTriangle : warningNumber === 2 ? Siren : OctagonX;
 
   return (
     <div
@@ -48,7 +50,7 @@ function TabWarningModal({ warningNumber, onDismiss }) {
         }}
       >
         {/* Icon */}
-        <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>{icon}</div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem" }}><Icon size={44} strokeWidth={1.8} color={borderColor} /></div>
 
         {/* Badge */}
         <div
@@ -158,7 +160,7 @@ function AbandonedScreen({ onBackToHome }) {
         textAlign: "center",
       }}
     >
-      <div style={{ fontSize: "3.5rem", marginBottom: "1rem" }}>🚫</div>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem", color: "#991b1b" }}><Ban size={56} strokeWidth={1.6} /></div>
       <h2
         style={{
           fontSize: "1.4rem",
@@ -195,7 +197,7 @@ function AbandonedScreen({ onBackToHome }) {
           cursor: "pointer",
         }}
       >
-        ← Back to All Papers
+        <ArrowLeft size={16} style={{ verticalAlign: "-3px" }} /> Back to All Papers
       </button>
     </div>
   );
@@ -215,6 +217,7 @@ export default function Quiz({
     new Array(questions.length).fill(false),
   );
   const [submitted, setSubmitted] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [abandoned, setAbandoned] = useState(false);
 
   // ── Tab-switch state ───────────────────────────────────────────────────
@@ -319,18 +322,15 @@ export default function Quiz({
     });
   }, [currentQ]);
 
-  const handleSubmit = useCallback(() => {
-    const unanswered = userAnswers.filter((a) => a === null).length;
-    if (unanswered > 0) {
-      const confirmed = window.confirm(
-        `You have ${unanswered} unanswered question(s). Submit anyway?`,
-      );
-      if (!confirmed) return;
-    }
+  // "Submit Exam" opens a confirmation dialog; confirming performs the submit.
+  const handleSubmit = useCallback(() => setConfirmOpen(true), []);
+
+  const confirmSubmit = useCallback(() => {
+    setConfirmOpen(false);
     const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
     setTimeTaken(elapsed);
     setSubmitted(true);
-  }, [userAnswers]);
+  }, []);
 
   const answeredCount = userAnswers.filter((a) => a !== null).length;
 
@@ -357,6 +357,31 @@ export default function Quiz({
 
   return (
     <div id="quiz">
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Submit your exam?"
+        icon={Send}
+        tone={userAnswers.some((a) => a === null) ? "warn" : "primary"}
+        actions={
+          <>
+            <button className="btn btn-ghost" onClick={() => setConfirmOpen(false)}>Keep reviewing</button>
+            <button className="btn btn-primary" data-autofocus onClick={confirmSubmit}>Submit exam</button>
+          </>
+        }
+      >
+        <p>
+          {userAnswers.some((a) => a === null)
+            ? "You still have unanswered questions. They will be marked as skipped."
+            : "You've answered every question. Once submitted you can't change your answers."}
+        </p>
+        <dl className="dlg-stats">
+          <div><dt>{userAnswers.filter((a) => a !== null).length}/{questions.length}</dt><dd>Answered</dd></div>
+          <div className={userAnswers.some((a) => a === null) ? "is-warn" : ""}><dt>{userAnswers.filter((a) => a === null).length}</dt><dd>Unanswered</dd></div>
+          <div><dt>{flagged.filter(Boolean).length}</dt><dd>Flagged</dd></div>
+          <div><dt>{formatTime(timeLeft)}</dt><dd>Time left</dd></div>
+        </dl>
+      </Dialog>
       {/* Warning modal — sits above all quiz content */}
       {warningShown !== null && (
         <TabWarningModal
@@ -387,7 +412,7 @@ export default function Quiz({
                     : "#d97706",
               }}
             >
-              ⚠ {switchCount}/{MAX_WARNINGS} warnings
+              <AlertTriangle size={14} style={{ verticalAlign: "-3px" }} /> {switchCount}/{MAX_WARNINGS} warnings
             </span>
           )}
 
@@ -402,7 +427,7 @@ export default function Quiz({
                 : ""
             }
           >
-            ⏱ {formatTime(timeLeft)}
+            <Timer size={15} style={{ verticalAlign: "-3px" }} /> {formatTime(timeLeft)}
           </span>
         </div>
       </div>
@@ -470,7 +495,7 @@ export default function Quiz({
           onClick={() => setCurrentQ((q) => q - 1)}
           disabled={currentQ === 0}
         >
-          ← Previous
+          <ChevronLeft size={18} /> Previous
         </button>
         <button className="btn-submit" onClick={handleSubmit}>
           Submit Exam
@@ -480,7 +505,7 @@ export default function Quiz({
           onClick={() => setCurrentQ((q) => q + 1)}
           disabled={currentQ === questions.length - 1}
         >
-          Next →
+          Next <ChevronRight size={18} />
         </button>
       </div>
     </div>

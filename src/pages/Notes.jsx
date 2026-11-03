@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNotes, loadRead } from "../hooks/useNotes.js";
 import { NOTES_EXTRAS } from "../notesExtras.js";
+import { Check, Lightbulb, Search, SearchX, Table2, Workflow } from "lucide-react";
+import { TopicIcon } from "../topicIcons.jsx";
 
 export function matches(topic, q) {
   const s = q.toLowerCase();
@@ -35,7 +37,7 @@ export default function Notes() {
       </header>
 
       <div className="search">
-        <span aria-hidden>🔍</span>
+        <Search size={18} aria-hidden />
         <input
           type="search"
           value={search}
@@ -46,7 +48,7 @@ export default function Notes() {
       </div>
 
       {shown.length === 0 ? (
-        <div className="empty-state"><div className="empty-emoji">🔎</div><p>No topics match “{search}”.</p></div>
+        <div className="empty-state"><div className="empty-icon"><SearchX size={40} /></div><p>No topics match “{search}”.</p></div>
       ) : (
         <div className="topic-grid">
           {shown.map((t) => {
@@ -54,15 +56,15 @@ export default function Notes() {
             return (
               <Link key={t.id} to={`/notes/${t.id}`} className="card topic-card" style={{ "--accent": t.borderColor }}>
                 <div className="topic-top">
-                  <span className="topic-icon">{t.icon}</span>
-                  {read.has(t.id) && <span className="pill pill--passed">✓ Read</span>}
+                  <span className="topic-icon"><TopicIcon id={t.id} size={26} /></span>
+                  {read.has(t.id) && <span className="pill pill--passed"><Check size={12} strokeWidth={3} /> Read</span>}
                 </div>
                 <h3>{t.title}</h3>
                 <p className="muted">{t.subtopics.length} sections</p>
                 <div className="topic-tags">
-                  {extras?.diagrams && <span className="tag">🗺 {extras.diagrams.length} diagram{extras.diagrams.length > 1 ? "s" : ""}</span>}
-                  {extras?.tables && <span className="tag">📋 Cheat-sheet</span>}
-                  {extras?.tips && <span className="tag">💡 Tips</span>}
+                  {extras?.diagrams && <span className="tag"><Workflow size={12} /> {extras.diagrams.length} diagram{extras.diagrams.length > 1 ? "s" : ""}</span>}
+                  {extras?.tables && <span className="tag"><Table2 size={12} /> Cheat-sheet</span>}
+                  {extras?.tips && <span className="tag"><Lightbulb size={12} /> Tips</span>}
                 </div>
               </Link>
             );

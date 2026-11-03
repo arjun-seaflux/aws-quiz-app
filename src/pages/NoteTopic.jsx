@@ -3,13 +3,15 @@ import { Link, useParams } from "react-router-dom";
 import Diagram from "../components/Diagram.jsx";
 import { useNotes, loadRead, saveRead } from "../hooks/useNotes.js";
 import { NOTES_EXTRAS } from "../notesExtras.js";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, FileQuestion, Lightbulb } from "lucide-react";
+import { TopicIcon } from "../topicIcons.jsx";
 
 function Section({ sub, open, onToggle }) {
   return (
     <div className={`acc ${open ? "open" : ""}`}>
       <button className="acc-head" onClick={onToggle} aria-expanded={open}>
         <span>{sub.title}</span>
-        <span className="acc-chev" aria-hidden>▾</span>
+        <ChevronDown className="acc-chev" size={18} aria-hidden />
       </button>
       {open && (
         <ul className="acc-body">
@@ -33,7 +35,7 @@ export default function NoteTopic() {
   if (idx === -1)
     return (
       <div className="empty-state">
-        <div className="empty-emoji">🤷</div><h1>Topic not found</h1>
+        <div className="empty-icon"><FileQuestion size={40} /></div><h1>Topic not found</h1>
         <Link className="btn btn-primary" to="/notes">All notes</Link>
       </div>
     );
@@ -53,15 +55,15 @@ export default function NoteTopic() {
 
   return (
     <article className="note" style={{ "--accent": topic.borderColor }}>
-      <Link to="/notes" className="back-link">← All notes</Link>
+      <Link to="/notes" className="back-link"><ArrowLeft size={16} /> All notes</Link>
       <header className="note-head">
-        <span className="topic-icon topic-icon--lg">{topic.icon}</span>
+        <span className="topic-icon topic-icon--lg"><TopicIcon id={topic.id} size={30} /></span>
         <div>
           <h1>{topic.title}</h1>
           <p className="muted">{topic.subtopics.length} sections · topic {idx + 1} of {topics.length}</p>
         </div>
         <button className={`btn ${isRead ? "btn-ok" : "btn-ghost"}`} onClick={toggleRead}>
-          {isRead ? "✓ Marked as read" : "Mark as read"}
+          {isRead ? <><Check size={16} /> Marked as read</> : "Mark as read"}
         </button>
       </header>
 
@@ -69,7 +71,7 @@ export default function NoteTopic() {
 
       {extras.tips && (
         <aside className="callout">
-          <h3>💡 Exam tips</h3>
+          <h3><Lightbulb size={18} /> Exam tips</h3>
           <ul>{extras.tips.map((t, i) => <li key={i}>{t}</li>)}</ul>
         </aside>
       )}
@@ -95,8 +97,8 @@ export default function NoteTopic() {
       {topic.subtopics.map((s, i) => <Section key={i} sub={s} open={openSet.has(i)} onToggle={() => toggle(i)} />)}
 
       <nav className="note-nav">
-        {prev ? <Link to={`/notes/${prev.id}`}>← {prev.title}</Link> : <span />}
-        {next ? <Link to={`/notes/${next.id}`}>{next.title} →</Link> : <span />}
+        {prev ? <Link to={`/notes/${prev.id}`}><ArrowLeft size={16} /> {prev.title}</Link> : <span />}
+        {next ? <Link to={`/notes/${next.id}`}>{next.title} <ArrowRight size={16} /></Link> : <span />}
       </nav>
     </article>
   );

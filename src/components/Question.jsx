@@ -1,6 +1,7 @@
 import Answers from "./Answers.jsx";
 import { useTheme } from "./ThemeContext.jsx";
 import DOMPurify from "dompurify";
+import { Flag } from "lucide-react";
 
 // Detect if a string contains HTML tags
 function containsHTML(str) {
@@ -59,7 +60,7 @@ export default function Question({
           className={`flag-btn${isFlagged ? " flagged" : ""}`}
           onClick={onFlag}
         >
-          {isFlagged ? "⚑ Flagged" : "⚐ Flag"}
+          <Flag size={14} fill={isFlagged ? "currentColor" : "none"} /> {isFlagged ? "Flagged" : "Flag"}
         </button>
       </div>
 

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useTheme } from "./ThemeContext.jsx";
 import { exportQuizToPDF } from "../utils/pdfExport.js";
 import DOMPurify from "dompurify";
+import { AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronUp, FileDown, Timer, X, XCircle } from "lucide-react";
+import Dialog from "./Dialog.jsx";
 
 const PASS_THRESHOLD = 72;
 
@@ -123,7 +125,7 @@ function ReviewItem({ answer, question, index, darkMode }) {
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
         >
-          {expanded ? "Hide explanation ▲" : "Why? ▼"}
+          {expanded ? <>Hide explanation <ChevronUp size={14} /></> : <>Why? <ChevronDown size={14} /></>}
         </button>
       )}
 
@@ -140,7 +142,7 @@ function ReviewItem({ answer, question, index, darkMode }) {
                   className={`choice-row ${isChoiceCorrect ? "choice-correct" : "choice-incorrect"} ${wasChosen ? "choice-chosen" : ""}`}
                 >
                   <div className="choice-row-header">
-                    <span className="choice-indicator">{isChoiceCorrect ? "✓" : "✗"}</span>
+                    <span className="choice-indicator">{isChoiceCorrect ? <Check size={14} strokeWidth={3} /> : <X size={14} strokeWidth={3} />}</span>
                     <span className="choice-text">{choice}</span>
                     {wasChosen && <span className="choice-yours-tag">Your pick</span>}
                   </div>
@@ -166,6 +168,7 @@ export default function Summary({
 }) {
   const [filter, setFilter] = useState("all");
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState(false);
   const { theme } = useTheme();
   const darkMode = theme === "dark";
 
@@ -231,7 +234,7 @@ export default function Summary({
       await exportQuizToPDF({ userAnswers, questions, paperNum, timeTaken });
     } catch (e) {
       console.error("PDF export failed", e);
-      alert("PDF export failed. Please try again.");
+      setPdfError(true);
     } finally {
       setPdfLoading(false);
     }
@@ -247,7 +250,7 @@ export default function Summary({
         </p>
         {timeStr && (
           <p id="summary-time-taken">
-            ⏱ Completed in <strong>{timeStr}</strong> out of 130 min
+            <Timer size={15} style={{ verticalAlign: "-3px" }} /> Completed in <strong>{timeStr}</strong> out of 130 min
           </p>
         )}
 
@@ -293,14 +296,25 @@ export default function Summary({
         </div>
 
         <div className={`pass-pill ${passed ? "pass" : "fail"}`}>
-          {passed ? `✓ Passed — ${scorePct}%` : `✗ Failed — ${scorePct}%`}
+          {passed ? <><CheckCircle2 size={18} /> Passed — {scorePct}%</> : <><XCircle size={18} /> Failed — {scorePct}%</>}
         </div>
       </div>
+
+      <Dialog
+        open={pdfError}
+        onClose={() => setPdfError(false)}
+        title="PDF export failed"
+        icon={AlertTriangle}
+        tone="danger"
+        actions={<button className="btn btn-primary" data-autofocus onClick={() => setPdfError(false)}>OK</button>}
+      >
+        Something went wrong while generating the report. Please try again.
+      </Dialog>
 
       {/* ── Actions ── */}
       <div className="summary-actions" style={{gap:"10px"}}>
         <button className="btn-back-papers" onClick={onBackToHome}>
-          ← Back to All Papers
+          <ArrowLeft size={16} /> Back to All Papers
         </button>
         <button
           className="btn-export-pdf"
@@ -314,7 +328,7 @@ export default function Summary({
             </span>
           ) : (
             <span className="pdf-btn-inner">
-              📄 Download PDF Report
+              <FileDown size={16} /> Download PDF Report
             </span>
           )}
         </button>

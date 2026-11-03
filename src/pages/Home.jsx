@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ArrowRight, BarChart3, BookOpen, ClipboardList } from "lucide-react";
 import { useAuth } from "../components/AuthContext.jsx";
 import { PAPER_NAMES, TOTAL_QUESTIONS, totalPaper } from "../papers.js";
 import { PASS_MARK, UNLOCK_THRESHOLD, computeUnlocked } from "../scores.js";
@@ -22,7 +23,7 @@ function ProgressCard() {
     <section className="card progress-card">
       <div className="progress-head">
         <div>
-          <h2>{user ? `Welcome back, ${firstName(user.name)} 👋` : "Track your progress"}</h2>
+          <h2>{user ? `Welcome back, ${firstName(user.name)}` : "Track your progress"}</h2>
           <p>
             {user
               ? `${done} of ${totalPaper.length} papers passed at ${PASS_MARK}%+`
@@ -31,9 +32,9 @@ function ProgressCard() {
         </div>
         {user ? (
           next ? (
-            <Link className="btn btn-primary" to={`/practice/${next}`}>Continue: {PAPER_NAMES[next]} →</Link>
+            <Link className="btn btn-primary" to={`/practice/${next}`}>Continue: {PAPER_NAMES[next]} <ArrowRight size={16} /></Link>
           ) : (
-            <Link className="btn btn-primary" to="/dashboard">View dashboard →</Link>
+            <Link className="btn btn-primary" to="/dashboard">View dashboard <ArrowRight size={16} /></Link>
           )
         ) : (
           <button className="btn btn-primary" onClick={() => setModal("register")}>Create free account</button>
@@ -72,22 +73,22 @@ export default function Home() {
 
       <section className="grid-3">
         <Link to="/notes" className="card feature">
-          <span className="feature-icon">📚</span>
+          <span className="feature-icon"><BookOpen size={26} /></span>
           <h3>Visual study notes</h3>
           <p>Every exam topic with architecture diagrams, cheat-sheet tables and exam tips — searchable, with read-tracking.</p>
-          <span className="feature-cta">Open notes →</span>
+          <span className="feature-cta">Open notes <ArrowRight size={15} /></span>
         </Link>
         <Link to="/practice" className="card feature">
-          <span className="feature-icon">📝</span>
+          <span className="feature-icon"><ClipboardList size={26} /></span>
           <h3>Timed practice exams</h3>
           <p>65 questions, 130 minutes, flag-and-review, and detailed explanations for every answer choice.</p>
-          <span className="feature-cta">Choose a paper →</span>
+          <span className="feature-cta">Choose a paper <ArrowRight size={15} /></span>
         </Link>
         <Link to="/dashboard" className="card feature">
-          <span className="feature-icon">📊</span>
+          <span className="feature-icon"><BarChart3 size={26} /></span>
           <h3>Progress dashboard</h3>
           <p>Score trends, attempt history and accuracy by exam domain so you can fix weak spots first.</p>
-          <span className="feature-cta">See my stats →</span>
+          <span className="feature-cta">See my stats <ArrowRight size={15} /></span>
         </Link>
       </section>
 
