@@ -10,6 +10,16 @@ import NotFound from "./pages/NotFound.jsx";
 const NoteTopic = lazy(() => import("./pages/NoteTopic.jsx"));
 const Exam = lazy(() => import("./pages/Exam.jsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.jsx"));
+const CustomPractice = lazy(() => import("./pages/CustomPractice.jsx"));
+const Review = lazy(() => import("./pages/Review.jsx"));
+const Saved = lazy(() => import("./pages/Saved.jsx"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard.jsx"));
+const Admin = lazy(() => import("./pages/Admin.jsx"));
+const Compete = lazy(() => import("./pages/Compete.jsx"));
+const Room = lazy(() => import("./pages/Room.jsx"));
+const ForgotPassword = lazy(() => import("./pages/AccountLinks.jsx").then((m) => ({ default: m.ForgotPassword })));
+const ResetPassword = lazy(() => import("./pages/AccountLinks.jsx").then((m) => ({ default: m.ResetPassword })));
+const VerifyEmail = lazy(() => import("./pages/AccountLinks.jsx").then((m) => ({ default: m.VerifyEmail })));
 
 const Loading = () => <div className="loading-block"><span className="spinner" /> Loading…</div>;
 
@@ -22,7 +32,17 @@ export default function App() {
           <Route path="notes" element={<Notes />} />
           <Route path="notes/:topicId" element={<NoteTopic />} />
           <Route path="practice" element={<Practice />} />
+          <Route path="practice/custom" element={<CustomPractice />} />
           <Route path="practice/:paperNum" element={<Exam />} />
+          <Route path="review" element={<Review />} />
+          <Route path="saved" element={<Saved />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="compete" element={<Compete />} />
+          <Route path="compete/:code" element={<Room />} />
+          <Route path="admin" element={<Admin />} />
+          <Route path="forgot" element={<ForgotPassword />} />
+          <Route path="reset" element={<ResetPassword />} />
+          <Route path="verify" element={<VerifyEmail />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="*" element={<NotFound />} />
         </Route>

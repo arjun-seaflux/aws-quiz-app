@@ -5,7 +5,8 @@ import { useAuth } from "../components/AuthContext.jsx";
 import { PAPER_NAMES, totalPaper } from "../papers.js";
 import { PASS_MARK } from "../scores.js";
 import { formatDate, formatDuration } from "../utils/format.js";
-import { AlertTriangle, ArrowRight, BarChart3 } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, Check, Gauge, Settings } from "lucide-react";
+import StreakCard from "../components/StreakCard.jsx";
 
 function Trend({ attempts }) {
   const pts = [...attempts].reverse().slice(-20); // oldest → newest
@@ -25,6 +26,74 @@ function Trend({ attempts }) {
       <path d={line} className="trend-line" />
       {pts.map((a, i) => <circle key={a.id} cx={x(i)} cy={y(a.score_pct)} r="4" className={a.score_pct >= PASS_MARK ? "dot pass" : "dot fail"}><title>{`${PAPER_NAMES[a.paper_num] ?? "Paper " + a.paper_num}: ${a.score_pct}%`}</title></circle>)}
     </svg>
+  );
+}
+
+/** 0–100: recent paper scores (50%) + domain accuracy (35%) + papers passed (15%). */
+function computeReadiness(papers, domains, passed) {
+  if (papers.length === 0) return { score: null };
+  const recent = papers.slice(0, 5);
+  const A = recent.reduce((s, a) => s + a.score_pct, 0) / recent.length;
+  const B = [...domains.map((d) => d.pct), ...Array(Math.max(0, 4 - domains.length)).fill(0)].reduce((s, v) => s + v, 0) / 4;
+  const C = (passed / totalPaper.length) * 100;
+  const score = Math.round(0.5 * A + 0.35 * B + 0.15 * C);
+  const label = score >= 85 ? "Exam ready" : score >= 75 ? "Almost there" : score >= 60 ? "Building momentum" : score >= 40 ? "Getting going" : "Just getting started";
+  return { score, label, A: Math.round(A), B: Math.round(B), C: Math.round(C) };
+}
+
+function Readiness({ r, weakest }) {
+  if (r.score == null)
+    return <section className="card"><h2 className="section-title"><Gauge size={18} /> Exam readiness</h2><p className="muted">Complete a full paper to get your readiness score.</p></section>;
+  const c = 2 * Math.PI * 46;
+  return (
+    <section className="card readiness">
+      <h2 className="section-title"><Gauge size={18} /> Exam readiness</h2>
+      <div className="readiness-body">
+        <svg viewBox="0 0 110 110" className="gauge" role="img" aria-label={`Readiness ${r.score} out of 100`}>
+          <circle cx="55" cy="55" r="46" className="ring-bg" />
+          <circle cx="55" cy="55" r="46" className={`ring-fg ${r.score >= 75 ? "pass" : "fail"}`} strokeDasharray={c} strokeDashoffset={c * (1 - r.score / 100)} transform="rotate(-90 55 55)" />
+          <text x="55" y="62" textAnchor="middle" className="gauge-n">{r.score}</text>
+        </svg>
+        <div>
+          <strong className="readiness-label">{r.label}</strong>
+          <ul className="muted small readiness-parts">
+            <li>Recent papers: {r.A}%</li><li>Domain accuracy: {r.B}%</li><li>Papers passed: {r.C}%</li>
+          </ul>
+          {weakest && weakest.pct < 75 && (
+            <Link className="link-btn" to={`/practice/custom?mode=domain&domain=${encodeURIComponent(weakest.domain)}&count=20`}>
+              Next step: drill “{weakest.domain}” ({weakest.pct}%) <ArrowRight size={14} />
+            </Link>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SettingsCard() {
+  const { user, refresh } = useAuth();
+  const [goal, setGoal] = useState(user.dailyGoal);
+  const [state, setState] = useState("idle");
+  const save = async (patch) => {
+    setState("busy");
+    try { await api.post("/settings", patch); await refresh(); setState("saved"); setTimeout(() => setState("idle"), 1500); }
+    catch { setState("error"); }
+  };
+  return (
+    <section className="card">
+      <h2 className="section-title"><Settings size={18} /> Goals &amp; privacy</h2>
+      <div className="settings-row">
+        <label className="field"><span>Daily goal (questions)</span>
+          <input type="number" min={1} max={200} value={goal} onChange={(e) => setGoal(Number(e.target.value))} /></label>
+        <button className="btn btn-sm" disabled={!(goal >= 1 && goal <= 200) || goal === user.dailyGoal || state === "busy"} onClick={() => save({ dailyGoal: goal })}>Save goal</button>
+        <label className="switch">
+          <input type="checkbox" checked={user.leaderboardOptIn} onChange={(e) => save({ leaderboardOptIn: e.target.checked })} />
+          <span>Show me on the public <Link to="/leaderboard">leaderboard</Link></span>
+        </label>
+        {state === "saved" && <span className="pill pill--passed"><Check size={12} /> Saved</span>}
+        {state === "error" && <span className="pill pill--retry">Couldn't save</span>}
+      </div>
+    </section>
   );
 }
 
@@ -65,7 +134,7 @@ export default function Dashboard() {
   if (error) return <div className="empty-state"><div className="empty-icon"><AlertTriangle size={40} /></div><p>Couldn't load your stats. Try again shortly.</p></div>;
   if (!data) return <div className="loading-block"><span className="spinner" /> Loading your stats…</div>;
 
-  const quiz = data.attempts.filter((a) => a.source === "quiz");
+  const quiz = data.attempts.filter((a) => a.source === "quiz" && a.kind === "paper");
   const avg = quiz.length ? Math.round(quiz.reduce((s, a) => s + a.score_pct, 0) / quiz.length) : null;
   const passRate = quiz.length ? Math.round((quiz.filter((a) => a.score_pct >= PASS_MARK).length / quiz.length) * 100) : null;
   const best = Object.values(scores).length ? Math.max(...Object.values(scores)) : null;
@@ -73,6 +142,9 @@ export default function Dashboard() {
   const domains = data.domains
     .map((d) => ({ ...d, pct: Math.round((d.correct / d.answered) * 100) }))
     .sort((a, b) => a.pct - b.pct);
+
+  const readiness = computeReadiness(quiz, domains, passed);
+  const weakest = domains[0];
 
   return (
     <div>
@@ -87,6 +159,11 @@ export default function Dashboard() {
         <Tile value={best == null ? "—" : `${best}%`} label="Best score" tone="good" />
         <Tile value={passRate == null ? "—" : `${passRate}%`} label="Pass rate" />
         <Tile value={`${passed}/${totalPaper.length}`} label="Papers passed" />
+      </div>
+
+      <div className="dash-grid">
+        <Readiness r={readiness} weakest={weakest} />
+        <StreakCard />
       </div>
 
       <div className="dash-grid">
@@ -123,16 +200,18 @@ export default function Dashboard() {
         </div>
       </section>
 
+      <SettingsCard />
+
       <section className="card">
         <h2 className="section-title">Attempt history</h2>
         {data.attempts.length === 0 ? <p className="muted">No attempts yet.</p> : (
           <div className="tbl-scroll">
             <table className="tbl">
-              <thead><tr><th>Paper</th><th>Date</th><th>Score</th><th>Correct / Wrong / Skipped</th><th>Time</th></tr></thead>
+              <thead><tr><th>Round</th><th>Date</th><th>Score</th><th>Correct / Wrong / Skipped</th><th>Time</th></tr></thead>
               <tbody>
                 {data.attempts.slice(0, 50).map((a) => (
                   <tr key={a.id}>
-                    <td>{PAPER_NAMES[a.paper_num] ?? `Paper ${a.paper_num}`}{a.source === "import" && <span className="tag">imported</span>}</td>
+                    <td>{a.kind === "practice" ? "Custom practice" : PAPER_NAMES[a.paper_num] ?? `Paper ${a.paper_num}`}{a.kind === "room" && <span className="tag">competition</span>}{a.source === "import" && <span className="tag">imported</span>}</td>
                     <td>{formatDate(a.created_at)}</td>
                     <td><span className={`pill ${a.score_pct >= PASS_MARK ? "pill--passed" : "pill--retry"}`}>{a.score_pct}%</span></td>
                     <td>{a.source === "import" ? "—" : `${a.correct} / ${a.wrong} / ${a.skipped}`}</td>

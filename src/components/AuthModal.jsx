@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext.jsx";
 import { Check, Cloud, Eye, EyeOff, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function AuthModal() {
   const { modal, setModal, login, register } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -82,7 +84,9 @@ export default function AuthModal() {
                 {show ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {isRegister && <small>At least 8 characters.</small>}
+            {isRegister ? <small>At least 8 characters.</small> : (
+              <button type="button" className="link-btn small forgot" onClick={() => { setModal(null); navigate("/forgot"); }}>Forgot password?</button>
+            )}
           </label>
 
           {error && <div className="auth-error" role="alert">{error}</div>}

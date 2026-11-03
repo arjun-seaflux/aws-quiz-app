@@ -1,6 +1,6 @@
 // Applies db/schema.sql and loads papers, questions and notes into Postgres.
 // Usage: npm run db:seed   (needs DATABASE_URL, e.g. via .env.local)
-import { readFileSync } from "node:fs";
+import SCHEMA from "../db/schema.js";
 import pg from "pg";
 
 import { paper1 } from "../src/assets/Papers/ND/Paper1.js";
@@ -38,7 +38,7 @@ await client.connect();
 
 try {
   await client.query("BEGIN");
-  await client.query(readFileSync(new URL("../db/schema.sql", import.meta.url), "utf8"));
+  await client.query(SCHEMA);
 
   const schemaOnly = process.argv.includes("--schema-only");
   const reset = process.argv.includes("--reset");

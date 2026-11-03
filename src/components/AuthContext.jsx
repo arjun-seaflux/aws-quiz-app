@@ -53,11 +53,25 @@ export function AuthProvider({ children }) {
     setServerScores({});
   }, []);
 
-  /** Called when an exam is submitted. Saves to the account, or locally for guests. */
-  const recordAttempt = useCallback(async (paperNum, scorePct, { answers, timeTaken }) => {
+  const refresh = useCallback(async () => {
+    const d = await api.get("/me").catch(() => null);
+    if (d) { setUser(d.user); setServerScores(d.scores || {}); }
+  }, []);
+
+  /**
+   * Called when an exam / practice round is submitted. Practice rounds are saved
+   * to the account only (they feed mistakes + flashcards); papers also update scores.
+   */
+  const recordAttempt = useCallback(async (paperNum, scorePct, { answers, timeTaken, secs, keys, mode }) => {
+    if (mode === "practice" || paperNum === 0) {
+      if (user && keys?.every(Boolean)) {
+        await api.post("/attempts", { kind: "practice", keys, answers, timeTaken, secs }).catch(() => {});
+      }
+      return;
+    }
     if (user) {
       try {
-        const d = await api.post("/attempts", { paperNum, answers, timeTaken });
+        const d = await api.post("/attempts", { kind: "paper", paperNum, answers, timeTaken, secs });
         setServerScores(d.scores);
         return;
       } catch { /* fall through to local so progress isn't lost */ }
@@ -72,8 +86,8 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => ({
     user, ready, modal, setModal,
     scores: user ? serverScores : localScores,
-    login, register, logout, recordAttempt,
-  }), [user, ready, modal, serverScores, localScores, login, register, logout, recordAttempt]);
+    login, register, logout, recordAttempt, refresh,
+  }), [user, ready, modal, serverScores, localScores, login, register, logout, recordAttempt, refresh]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

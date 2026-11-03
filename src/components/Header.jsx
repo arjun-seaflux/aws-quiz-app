@@ -4,12 +4,14 @@ import logoImg from "../assets/quiz-logo.png";
 import { useAuth } from "./AuthContext.jsx";
 import { useTheme } from "./ThemeContext.jsx";
 import { firstName } from "../utils/format.js";
-import { ChevronDown, LayoutDashboard, LogOut, Moon, Sun } from "lucide-react";
+import { Bookmark, ChevronDown, LayoutDashboard, LogOut, Moon, ShieldCheck, Sun, Trophy } from "lucide-react";
 
 const NAV = [
   { to: "/", label: "Home", end: true },
   { to: "/notes", label: "Notes" },
   { to: "/practice", label: "Practice" },
+  { to: "/review", label: "Review" },
+  { to: "/compete", label: "Compete" },
   { to: "/dashboard", label: "Dashboard" },
 ];
 
@@ -41,6 +43,9 @@ function UserMenu({ user, onLogout }) {
             <span>{user.email}</span>
           </div>
           <button role="menuitem" onClick={() => { setOpen(false); navigate("/dashboard"); }}><LayoutDashboard size={16} /> My dashboard</button>
+          <button role="menuitem" onClick={() => { setOpen(false); navigate("/saved"); }}><Bookmark size={16} /> Saved</button>
+          <button role="menuitem" onClick={() => { setOpen(false); navigate("/leaderboard"); }}><Trophy size={16} /> Leaderboard</button>
+          {user.isAdmin && <button role="menuitem" onClick={() => { setOpen(false); navigate("/admin"); }}><ShieldCheck size={16} /> Admin</button>}
           <button role="menuitem" onClick={() => { setOpen(false); onLogout(); }}><LogOut size={16} /> Sign out</button>
         </div>
       )}

@@ -4,6 +4,7 @@ import { useAuth } from "../components/AuthContext.jsx";
 import { PAPER_NAMES, TOTAL_QUESTIONS, totalPaper } from "../papers.js";
 import { PASS_MARK, UNLOCK_THRESHOLD, computeUnlocked } from "../scores.js";
 import { firstName } from "../utils/format.js";
+import StreakCard from "../components/StreakCard.jsx";
 
 const DOMAINS = [
   { name: "Development with AWS Services", pct: 32, color: "var(--c-compute)" },
@@ -11,6 +12,11 @@ const DOMAINS = [
   { name: "Deployment", pct: 24, color: "var(--c-net)" },
   { name: "Troubleshooting & Optimization", pct: 18, color: "var(--c-storage)" },
 ];
+
+function HomeStreak() {
+  const { user } = useAuth();
+  return user ? <StreakCard compact /> : null;
+}
 
 function ProgressCard() {
   const { user, scores, setModal } = useAuth();
@@ -70,6 +76,7 @@ export default function Home() {
       </section>
 
       <ProgressCard />
+      <HomeStreak />
 
       <section className="grid-3">
         <Link to="/notes" className="card feature">

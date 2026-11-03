@@ -1,4 +1,6 @@
--- AWS Quiz schema (PostgreSQL / Neon). Safe to re-run.
+// Idempotent schema (PostgreSQL / Neon). Applied automatically by the API on first use
+// and by `npm run db:seed` / `db:migrate`. Safe to run any number of times.
+export default String.raw`-- AWS Quiz schema (PostgreSQL / Neon). Safe to re-run.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -65,8 +67,13 @@ ALTER TABLE attempts ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'paper'
 ALTER TABLE attempt_answers ADD COLUMN IF NOT EXISTS src_paper int;   -- which question this answer was for
 ALTER TABLE attempt_answers ADD COLUMN IF NOT EXISTS src_pos   int;
 ALTER TABLE attempt_answers ADD COLUMN IF NOT EXISTS secs      int;   -- time spent on the question
-UPDATE attempt_answers aa SET src_paper = a.paper_num, src_pos = aa.position
-  FROM attempts a WHERE a.id = aa.attempt_id AND aa.src_paper IS NULL;
+CREATE INDEX IF NOT EXISTS attempt_answers_unmapped_idx ON attempt_answers (attempt_id) WHERE src_paper IS NULL;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM attempt_answers WHERE src_paper IS NULL) THEN
+    UPDATE attempt_answers aa SET src_paper = a.paper_num, src_pos = aa.position
+      FROM attempts a WHERE a.id = aa.attempt_id AND aa.src_paper IS NULL;
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS attempt_answers_src_idx ON attempt_answers (src_paper, src_pos);
 
 -- Server-side autosave so an unfinished exam can be resumed on any device
@@ -163,3 +170,4 @@ CREATE TABLE IF NOT EXISTS room_players (
   PRIMARY KEY (room_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS room_players_user_idx ON room_players (user_id);
+`;

@@ -4,6 +4,7 @@ import { exportQuizToPDF } from "../utils/pdfExport.js";
 import DOMPurify from "dompurify";
 import { AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronUp, FileDown, Timer, X, XCircle } from "lucide-react";
 import Dialog from "./Dialog.jsx";
+import ReviewActions from "./ReviewActions.jsx";
 
 const PASS_THRESHOLD = 72;
 
@@ -68,7 +69,7 @@ function DomainCard({ domain, stats, darkMode }) {
 }
 
 // ── Review Item ─────────────────────────────────────────────────────────────
-function ReviewItem({ answer, question, index, darkMode }) {
+function ReviewItem({ answer, question, index, darkMode, qkey, secs }) {
   const [expanded, setExpanded] = useState(false);
   const isSkipped = answer === null;
   const isCorrect = !isSkipped && isAnswerCorrect(answer, question);
@@ -119,6 +120,9 @@ function ReviewItem({ answer, question, index, darkMode }) {
         )}
       </div>
 
+      {secs != null && <p className="review-time">Time spent: {secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`}</p>}
+      <ReviewActions question={question} qkey={qkey} />
+
       {mainExplanation && (
         <button
           className={`explain-toggle ${expanded ? "open" : ""}`}
@@ -165,6 +169,9 @@ export default function Summary({
   onBackToHome,
   onPaperComplete,
   timeTaken,
+  secs = null,
+  mode = "exam",
+  backLabel = "Back to All Papers",
 }) {
   const [filter, setFilter] = useState("all");
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -190,10 +197,11 @@ export default function Summary({
       : null;
 
   const completedRef = useRef(false);
+  const keys = questions.map((q, i) => q._key ?? (paperNum > 0 ? `${paperNum}:${i}` : null));
   useEffect(() => {
     if (completedRef.current) return;
     completedRef.current = true;
-    if (onPaperComplete) onPaperComplete(paperNum, scorePct, { answers: userAnswers, timeTaken });
+    if (onPaperComplete) onPaperComplete(paperNum, scorePct, { answers: userAnswers, timeTaken, secs, keys, mode });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -314,7 +322,7 @@ export default function Summary({
       {/* ── Actions ── */}
       <div className="summary-actions" style={{gap:"10px"}}>
         <button className="btn-back-papers" onClick={onBackToHome}>
-          <ArrowLeft size={16} /> Back to All Papers
+          <ArrowLeft size={16} /> {backLabel}
         </button>
         <button
           className="btn-export-pdf"
@@ -352,6 +360,24 @@ export default function Summary({
       )}
 
       {/* ── Filter bar ── */}
+      {secs && secs.some((x) => x > 0) && (
+        <section className="slowest">
+          <h3>Slowest questions</h3>
+          <ol>
+            {secs.map((t, i) => ({ t, i })).sort((a, b) => b.t - a.t).slice(0, 5).map(({ t, i }) => (
+              <li key={i}>
+                <span className="slowest-q">Q{i + 1}</span>
+                <span className="slowest-bar"><span style={{ width: `${Math.min(100, (t / Math.max(...secs)) * 100)}%` }} /></span>
+                <span className="slowest-t">{t >= 60 ? `${Math.floor(t / 60)}m ${t % 60}s` : `${t}s`}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="muted small">
+            Average {Math.round(secs.reduce((a, b) => a + b, 0) / secs.length)}s per question — the exam allows about 2 minutes each.
+          </p>
+        </section>
+      )}
+
       <div className="review-filter-bar" style={{ padding: "14px 0px" }}>
         <h3 className="review-heading">Review</h3>
         <div className="filter-tabs">
@@ -382,6 +408,8 @@ export default function Summary({
             question={questions[index]}
             index={index}
             darkMode={darkMode}
+            qkey={keys[index]}
+            secs={secs ? secs[index] : null}
           />
         ))}
       </ol>

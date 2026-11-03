@@ -48,6 +48,19 @@ export const NOTES_EXTRAS = {
   },
 
   ec2: {
+    diagrams: [
+      {
+        title: "Instance role → AWS API (no keys on the box)",
+        layers: [["ec2"], ["imds"], ["creds"], ["aws"]],
+        nodes: {
+          ec2: n("EC2 instance", "SDK / CLI", "compute"),
+          imds: n("Metadata service", "169.254.169.254", "net"),
+          creds: n("Role credentials", "rotated automatically", "sec"),
+          aws: n("S3 · DynamoDB…", "per the role's policy", "storage"),
+        },
+        edges: [["ec2", "imds", "IMDSv2"], ["imds", "creds"], ["creds", "aws", "signed"]],
+      },
+    ],
     tables: [
       {
         title: "Purchasing options",
@@ -373,6 +386,20 @@ export const NOTES_EXTRAS = {
   },
 
   beanstalk: {
+    diagrams: [
+      {
+        title: "What Elastic Beanstalk builds for you",
+        layers: [["dev"], ["ver"], ["lb"], ["asg"]],
+        nodes: {
+          dev: n("Your code", "zip / eb deploy", "user"),
+          ver: n("Application version", "stored in S3", "storage"),
+          lb: n("Load balancer", "", "net"),
+          asg: n("Auto Scaling group", "EC2 + platform", "compute"),
+        },
+        edges: [["dev", "ver", "upload"], ["ver", "lb", "deploy"], ["lb", "asg"]],
+        caption: "An environment is one version running on this stack; swap CNAMEs between environments for blue/green.",
+      },
+    ],
     tables: [
       {
         title: "Deployment policies",
@@ -559,6 +586,40 @@ export const NOTES_EXTRAS = {
       "API Gateway can use a Cognito user pool authorizer directly (validates the JWT).",
       "Identity pools support guests (unauthenticated) and social / SAML / OIDC providers.",
       "Lambda triggers let you customise sign-up, auth challenges and tokens.",
+    ],
+  },
+
+  "step-functions": {
+    diagrams: [
+      {
+        title: "A Step Functions workflow",
+        layers: [["start"], ["task"], ["choice"], ["ok", "retry"]],
+        nodes: {
+          start: n("Start", "execution input", "user"),
+          task: n("Task state", "Lambda · SDK call", "compute"),
+          choice: n("Choice", "branch on result", "int"),
+          ok: n("Succeed", "", "ok"),
+          retry: n("Retry / Catch", "backoff, then fail", "bad"),
+        },
+        edges: [["start", "task"], ["task", "choice"], ["choice", "ok", "success"], ["choice", "retry", "error"]],
+        caption: "Standard workflows run up to a year; Express workflows are for high-volume, short runs.",
+      },
+    ],
+  },
+
+  "advanced-identity": {
+    diagrams: [
+      {
+        title: "Reading a secret safely",
+        layers: [["app"], ["store"], ["kms"]],
+        nodes: {
+          app: n("Application", "IAM role", "compute"),
+          store: n("Secrets Manager", "or SSM Parameter Store", "sec"),
+          kms: n("KMS key", "decrypts the value", "int"),
+        },
+        edges: [["app", "store", "GetSecret"], ["store", "kms", "Decrypt"]],
+        caption: "Secrets Manager rotates credentials automatically; Parameter Store is cheaper and fine for plain config.",
+      },
     ],
   },
 };

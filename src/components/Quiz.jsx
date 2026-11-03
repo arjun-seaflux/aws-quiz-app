@@ -203,19 +203,41 @@ function AbandonedScreen({ onBackToHome }) {
   );
 }
 
+/**
+ * The exam engine, used for timed exams, untimed practice and live competitions.
+ *  mode        "exam" | "practice" (instant feedback, no timer) | "room" (shared deadline)
+ *  startedAt   epoch ms the clock started (pass a saved value to resume)
+ *  deadlineAt  epoch ms the exam ends (room mode); defaults to startedAt + 130 min
+ *  initial     { answers, flagged, currentQ } to resume from
+ *  onProgress  called (debounced) with the current state, for autosave
+ *  proctor     tab-switch warnings / abandonment (exam only by default)
+ */
 export default function Quiz({
   questions,
   paperNum,
   onBackToHome,
   onPaperComplete,
+  mode = "exam",
+  startedAt: startedAtProp,
+  deadlineAt,
+  initial,
+  onProgress,
+  proctor = mode === "exam",
+  backLabel = "Back to All Papers",
+  submitTitle = mode === "practice" ? "Finish practice?" : "Submit your exam?",
+  submitLabel = mode === "practice" ? "Finish practice" : "Submit exam",
 }) {
+  const n = questions.length;
+  const fits = (a) => Array.isArray(a) && a.length === n;
   const [userAnswers, setUserAnswers] = useState(
-    new Array(questions.length).fill(null),
+    () => (fits(initial?.answers) ? initial.answers : new Array(n).fill(null)),
   );
-  const [currentQ, setCurrentQ] = useState(0);
+  const [currentQ, setCurrentQ] = useState(() => Math.min(initial?.currentQ ?? 0, n - 1));
   const [flagged, setFlagged] = useState(
-    new Array(questions.length).fill(false),
+    () => (fits(initial?.flagged) ? initial.flagged : new Array(n).fill(false)),
   );
+  const [revealed, setRevealed] = useState(() => new Array(n).fill(false));
+  const [secs, setSecs] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [abandoned, setAbandoned] = useState(false);
@@ -234,25 +256,42 @@ export default function Quiz({
   useEffect(() => { abandonedRef.current = abandoned; }, [abandoned]);
 
   // ── Timer ──────────────────────────────────────────────────────────────
-  const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
+  // Driven by absolute timestamps so a resumed or shared-deadline exam stays accurate.
+  const timed = mode !== "practice";
+  const startedAt = useRef(startedAtProp ?? Date.now()).current;
+  const deadline = deadlineAt ?? startedAt + EXAM_DURATION * 1000;
+  const [timeLeft, setTimeLeft] = useState(() => Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
   const [timeTaken, setTimeTaken] = useState(0);
-  const startTimeRef = useRef(Date.now());
+
+  // Per-question time: add the elapsed slice to whichever question is on screen.
+  const secsRef = useRef(new Array(n).fill(0));
+  const curRef = useRef({ q: currentQ, t0: Date.now() });
+  const flushTime = useCallback(() => {
+    const now = Date.now();
+    secsRef.current[curRef.current.q] += (now - curRef.current.t0) / 1000;
+    curRef.current.t0 = now;
+  }, []);
+  useEffect(() => { flushTime(); curRef.current.q = currentQ; }, [currentQ, flushTime]);
+
+  const finish = useCallback((elapsedSecs) => {
+    flushTime();
+    setSecs(secsRef.current.map((x) => Math.round(x)));
+    setTimeTaken(elapsedSecs);
+    setSubmitted(true);
+  }, [flushTime]);
 
   useEffect(() => {
-    if (submitted || abandoned) return;
+    if (!timed || submitted || abandoned) return;
     const id = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(id);
-          setTimeTaken(EXAM_DURATION);
-          setSubmitted(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      const left = Math.ceil((deadline - Date.now()) / 1000);
+      if (left <= 0) {
+        clearInterval(id);
+        setTimeLeft(0);
+        finish(Math.round((deadline - startedAt) / 1000));
+      } else setTimeLeft(left);
+    }, 500);
     return () => clearInterval(id);
-  }, [submitted, abandoned]);
+  }, [timed, submitted, abandoned, deadline, startedAt, finish]);
 
   // ── Tab-switch detector — registered ONCE on mount ─────────────────────
   // Fires when user LEAVES the tab (visibilityState === "hidden").
@@ -260,6 +299,7 @@ export default function Quiz({
   // React state updates from the hidden event flush on re-focus.
   useEffect(() => {
     const handleVisibilityChange = () => {
+      if (!proctor) return;
       if (document.visibilityState !== "hidden") return;
       if (submittedRef.current || abandonedRef.current) return;
 
@@ -281,16 +321,19 @@ export default function Quiz({
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // empty deps — refs keep values fresh
 
   // ── Urgency colour ─────────────────────────────────────────────────────
-  const timerUrgent = timeLeft <= 10 * 60;
-  const timerWarning = timeLeft <= 30 * 60;
+  const totalSecs = Math.round((deadline - startedAt) / 1000);
+  const timerUrgent = timeLeft <= Math.min(10 * 60, totalSecs * 0.1);
+  const timerWarning = timeLeft <= Math.min(30 * 60, totalSecs * 0.25);
 
   // ── Answer / flag handlers ─────────────────────────────────────────────
   const handleSelectAnswer = useCallback(
     (selectedAnswer) => {
       const q = questions[currentQ];
+      if (mode === "practice" && revealed[currentQ]) return; // locked once checked
       if (q.isMultiSelect) {
         setUserAnswers((prev) => {
           const updated = [...prev];
@@ -309,10 +352,15 @@ export default function Quiz({
           updated[currentQ] = selectedAnswer;
           return updated;
         });
+        if (mode === "practice") setRevealed((r) => r.map((v, i) => (i === currentQ ? true : v)));
       }
     },
-    [currentQ, questions],
+    [currentQ, questions, mode, revealed],
   );
+
+  const handleCheck = useCallback(() => {
+    setRevealed((r) => r.map((v, i) => (i === currentQ ? true : v)));
+  }, [currentQ]);
 
   const handleFlag = useCallback(() => {
     setFlagged((prev) => {
@@ -327,12 +375,37 @@ export default function Quiz({
 
   const confirmSubmit = useCallback(() => {
     setConfirmOpen(false);
-    const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
-    setTimeTaken(elapsed);
-    setSubmitted(true);
-  }, []);
+    finish(Math.min(Math.floor((Date.now() - startedAt) / 1000), Math.round((deadline - startedAt) / 1000)));
+  }, [finish, startedAt, deadline]);
 
   const answeredCount = userAnswers.filter((a) => a !== null).length;
+
+  // Debounced autosave so an unfinished attempt can be resumed (or tracked live in a room).
+  const progressRef = useRef(onProgress);
+  useEffect(() => { progressRef.current = onProgress; }, [onProgress]);
+  useEffect(() => {
+    if (!progressRef.current || submitted || abandoned) return;
+    const t = setTimeout(
+      () => progressRef.current?.({ answers: userAnswers, flagged, currentQ, startedAt }), 1200);
+    return () => clearTimeout(t);
+  }, [userAnswers, flagged, currentQ, submitted, abandoned, startedAt]);
+
+  // Keyboard: ← / → move between questions, F flags. (A–E / 1–5 pick answers; see Answers.)
+  useEffect(() => {
+    if (submitted || abandoned) return;
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || confirmOpen) return;
+      if (/input|textarea|select/i.test(e.target.tagName) || e.target.isContentEditable) return;
+      if (document.querySelector(".dlg-backdrop")) return;
+      if (e.key === "ArrowRight") setCurrentQ((q) => Math.min(q + 1, n - 1));
+      else if (e.key === "ArrowLeft") setCurrentQ((q) => Math.max(q - 1, 0));
+      else if (e.key.toLowerCase() === "f") handleFlag();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [submitted, abandoned, confirmOpen, n, handleFlag]);
 
   // ── Render guards ──────────────────────────────────────────────────────
 
@@ -351,6 +424,9 @@ export default function Quiz({
         onBackToHome={onBackToHome}
         onPaperComplete={onPaperComplete}
         timeTaken={timeTaken}
+        secs={secs}
+        mode={mode}
+        backLabel={backLabel}
       />
     );
   }
@@ -360,13 +436,13 @@ export default function Quiz({
       <Dialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title="Submit your exam?"
+        title={submitTitle}
         icon={Send}
         tone={userAnswers.some((a) => a === null) ? "warn" : "primary"}
         actions={
           <>
             <button className="btn btn-ghost" onClick={() => setConfirmOpen(false)}>Keep reviewing</button>
-            <button className="btn btn-primary" data-autofocus onClick={confirmSubmit}>Submit exam</button>
+            <button className="btn btn-primary" data-autofocus onClick={confirmSubmit}>{submitLabel}</button>
           </>
         }
       >
@@ -379,7 +455,7 @@ export default function Quiz({
           <div><dt>{userAnswers.filter((a) => a !== null).length}/{questions.length}</dt><dd>Answered</dd></div>
           <div className={userAnswers.some((a) => a === null) ? "is-warn" : ""}><dt>{userAnswers.filter((a) => a === null).length}</dt><dd>Unanswered</dd></div>
           <div><dt>{flagged.filter(Boolean).length}</dt><dd>Flagged</dd></div>
-          <div><dt>{formatTime(timeLeft)}</dt><dd>Time left</dd></div>
+          <div><dt>{timed ? formatTime(timeLeft) : "—"}</dt><dd>Time left</dd></div>
         </dl>
       </Dialog>
       {/* Warning modal — sits above all quiz content */}
@@ -391,7 +467,7 @@ export default function Quiz({
       )}
 
       <div id="quiz-header">
-        <span id="quiz-title">DVA-C02 · Paper {paperNum}</span>
+        <span id="quiz-title">DVA-C02 · {paperNum > 0 ? `Paper ${paperNum}` : "Custom practice"}</span>
         <div id="quiz-meta">
           <span>
             {answeredCount} / {questions.length} answered
@@ -416,19 +492,16 @@ export default function Quiz({
             </span>
           )}
 
-          {/* Countdown timer */}
-          <span
-            id="quiz-timer"
-            className={
-              timerUrgent
-                ? "timer-urgent"
-                : timerWarning
-                ? "timer-warning"
-                : ""
-            }
-          >
-            <Timer size={15} style={{ verticalAlign: "-3px" }} /> {formatTime(timeLeft)}
-          </span>
+          {timed ? (
+            <span
+              id="quiz-timer"
+              className={timerUrgent ? "timer-urgent" : timerWarning ? "timer-warning" : ""}
+            >
+              <Timer size={15} style={{ verticalAlign: "-3px" }} /> {formatTime(timeLeft)}
+            </span>
+          ) : (
+            <span id="quiz-timer"><Timer size={15} style={{ verticalAlign: "-3px" }} /> Practice mode</span>
+          )}
         </div>
       </div>
 
@@ -451,6 +524,8 @@ export default function Quiz({
           isFlagged={flagged[currentQ]}
           onSelectAnswer={handleSelectAnswer}
           onFlag={handleFlag}
+          reveal={mode === "practice" && revealed[currentQ]}
+          onCheck={mode === "practice" ? handleCheck : null}
         />
 
         <div id="q-sidebar">
@@ -498,7 +573,7 @@ export default function Quiz({
           <ChevronLeft size={18} /> Previous
         </button>
         <button className="btn-submit" onClick={handleSubmit}>
-          Submit Exam
+          {mode === "practice" ? "Finish" : "Submit Exam"}
         </button>
         <button
           className="btn-nav"

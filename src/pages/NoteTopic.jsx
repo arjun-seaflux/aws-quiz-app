@@ -5,6 +5,9 @@ import { useNotes, loadRead, saveRead } from "../hooks/useNotes.js";
 import { NOTES_EXTRAS } from "../notesExtras.js";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, FileQuestion, Lightbulb } from "lucide-react";
 import { TopicIcon } from "../topicIcons.jsx";
+import { Bookmark, BookmarkCheck, Target } from "lucide-react";
+import { useAuth } from "../components/AuthContext.jsx";
+import { useSaved } from "../hooks/useSaved.js";
 
 function Section({ sub, open, onToggle }) {
   return (
@@ -27,6 +30,8 @@ export default function NoteTopic() {
   const topics = useNotes();
   const [openSet, setOpenSet] = useState(() => new Set([0]));
   const [read, setRead] = useState(() => new Set(loadRead()));
+  const { user, setModal } = useAuth();
+  const { has, toggle: toggleSaved } = useSaved();
 
   useEffect(() => { setOpenSet(new Set([0])); }, [topicId]);
 
@@ -61,6 +66,12 @@ export default function NoteTopic() {
         <div>
           <h1>{topic.title}</h1>
           <p className="muted">{topic.subtopics.length} sections · topic {idx + 1} of {topics.length}</p>
+        </div>
+        <div className="note-actions">
+          <button className="btn btn-sm" onClick={() => (user ? toggleSaved("note", topic.id) : setModal("login"))} aria-pressed={has("note", topic.id)}>
+            {has("note", topic.id) ? <BookmarkCheck size={16} /> : <Bookmark size={16} />} {has("note", topic.id) ? "Saved" : "Save"}
+          </button>
+          <Link className="btn btn-sm" to={`/practice/custom?mode=topic&topic=${topic.id}&count=15`}><Target size={16} /> Practice this topic</Link>
         </div>
         <button className={`btn ${isRead ? "btn-ok" : "btn-ghost"}`} onClick={toggleRead}>
           {isRead ? <><Check size={16} /> Marked as read</> : "Mark as read"}
