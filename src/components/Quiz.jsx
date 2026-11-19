@@ -253,6 +253,8 @@ export default function Quiz({
   const submittedRef = useRef(false);
   const abandonedRef = useRef(false);
 
+  // Lets the stylesheet swap the bottom tab bar for the exam's own sticky footer on phones.
+  useEffect(() => { document.body.classList.add("in-quiz"); return () => document.body.classList.remove("in-quiz"); }, []);
   useEffect(() => { submittedRef.current = submitted; }, [submitted]);
   useEffect(() => { abandonedRef.current = abandoned; }, [abandoned]);
 

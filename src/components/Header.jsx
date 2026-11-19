@@ -4,16 +4,16 @@ import logoImg from "../assets/quiz-logo.png";
 import { useAuth } from "./AuthContext.jsx";
 import { useTheme } from "./ThemeContext.jsx";
 import { firstName } from "../utils/format.js";
-import { Bookmark, ChevronDown, LayoutDashboard, LogOut, Moon, ShieldCheck, Sun, Trophy } from "lucide-react";
+import { BookOpen, Bookmark, ChevronDown, ClipboardList, Dumbbell, Home, LayoutDashboard, LogOut, Moon, ShieldCheck, Sun, Swords, Trophy, RotateCcw } from "lucide-react";
 
 const NAV = [
-  { to: "/", label: "Home", end: true },
-  { to: "/notes", label: "Notes" },
-  { to: "/practice", label: "Practice" },
-  { to: "/papers", label: "Papers" },
-  { to: "/review", label: "Review" },
-  { to: "/compete", label: "Compete" },
-  { to: "/dashboard", label: "Dashboard" },
+  { to: "/", label: "Home", end: true, Icon: Home },
+  { to: "/notes", label: "Notes", Icon: BookOpen },
+  { to: "/practice", label: "Practice", Icon: Dumbbell },
+  { to: "/papers", label: "Papers", Icon: ClipboardList },
+  { to: "/review", label: "Review", Icon: RotateCcw },
+  { to: "/compete", label: "Compete", Icon: Swords },
+  { to: "/dashboard", label: "Stats", Icon: LayoutDashboard },
 ];
 
 function UserMenu({ user, onLogout }) {
@@ -72,7 +72,8 @@ export default function Header() {
         <nav className="hd-nav" aria-label="Main">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? "active" : "")}>
-              {n.label}
+              <n.Icon className="nav-ic" size={20} aria-hidden />
+              <span>{n.label}</span>
             </NavLink>
           ))}
         </nav>
